@@ -1,0 +1,771 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Feature Management Service Architecture</title>
+  <style>
+    :root {
+      --bg: #f4efe7;
+      --panel: #fffaf2;
+      --panel-strong: #fff;
+      --text: #1f2937;
+      --muted: #5b6472;
+      --line: #ded4c4;
+      --accent: #a64b2a;
+      --accent-soft: #f3dfd2;
+      --code-bg: #1b2430;
+      --code-text: #edf2f7;
+      --shadow: 0 18px 50px rgba(72, 48, 28, 0.08);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+      color: var(--text);
+      background:
+        radial-gradient(circle at top left, rgba(166, 75, 42, 0.16), transparent 26%),
+        linear-gradient(180deg, #f8f3eb 0%, #f4efe7 100%);
+      line-height: 1.7;
+    }
+
+    .page {
+      max-width: 1180px;
+      margin: 0 auto;
+      padding: 40px 20px 64px;
+    }
+
+    .hero {
+      background: linear-gradient(135deg, rgba(166, 75, 42, 0.96), rgba(121, 43, 22, 0.96));
+      color: #fff;
+      border-radius: 24px;
+      padding: 36px 32px;
+      box-shadow: var(--shadow);
+      margin-bottom: 28px;
+    }
+
+    .hero h1 {
+      margin: 0 0 12px;
+      font-size: 2.2rem;
+      line-height: 1.15;
+    }
+
+    .hero p {
+      margin: 0;
+      max-width: 820px;
+      color: rgba(255, 247, 240, 0.92);
+      font-size: 1.02rem;
+    }
+
+    .layout {
+      display: grid;
+      grid-template-columns: 280px minmax(0, 1fr);
+      gap: 24px;
+      align-items: start;
+    }
+
+    .toc,
+    .content {
+      background: var(--panel);
+      border: 1px solid rgba(222, 212, 196, 0.9);
+      border-radius: 22px;
+      box-shadow: var(--shadow);
+    }
+
+    .toc {
+      position: sticky;
+      top: 20px;
+      padding: 22px 20px;
+    }
+
+    .toc h2 {
+      margin: 0 0 14px;
+      font-size: 1rem;
+      color: var(--accent);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+
+    .toc a {
+      display: block;
+      color: var(--muted);
+      text-decoration: none;
+      padding: 7px 0;
+      border-bottom: 1px dashed rgba(166, 75, 42, 0.12);
+      font-size: 0.95rem;
+    }
+
+    .toc a:hover {
+      color: var(--accent);
+    }
+
+    .content {
+      padding: 30px 34px 42px;
+      overflow: hidden;
+    }
+
+    h2 {
+      margin-top: 34px;
+      margin-bottom: 14px;
+      font-size: 1.65rem;
+      color: #7a2e17;
+      border-bottom: 2px solid var(--accent-soft);
+      padding-bottom: 8px;
+    }
+
+    h3 {
+      margin-top: 24px;
+      margin-bottom: 10px;
+      font-size: 1.15rem;
+      color: #8a3b20;
+    }
+
+    p {
+      margin: 0 0 14px;
+    }
+
+    ul,
+    ol {
+      margin: 0 0 18px 24px;
+      padding: 0;
+    }
+
+    li {
+      margin: 6px 0;
+    }
+
+    code {
+      font-family: Consolas, "Courier New", monospace;
+      font-size: 0.92em;
+      background: #f2e8dc;
+      padding: 2px 6px;
+      border-radius: 6px;
+      color: #7a2e17;
+    }
+
+    pre {
+      margin: 16px 0 20px;
+      padding: 18px 20px;
+      background: var(--code-bg);
+      color: var(--code-text);
+      border-radius: 16px;
+      overflow-x: auto;
+      border: 1px solid rgba(255, 255, 255, 0.06);
+    }
+
+    pre code {
+      background: transparent;
+      padding: 0;
+      color: inherit;
+    }
+
+    .card {
+      background: var(--panel-strong);
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      padding: 18px 18px 4px;
+      margin: 16px 0 22px;
+    }
+
+    .callout {
+      margin: 18px 0 20px;
+      padding: 16px 18px;
+      border-left: 4px solid var(--accent);
+      background: #fff4ea;
+      border-radius: 0 14px 14px 0;
+    }
+
+    .mermaid {
+      background: #fff;
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      padding: 12px;
+      overflow-x: auto;
+    }
+
+    .footer {
+      margin-top: 26px;
+      color: var(--muted);
+      font-size: 0.92rem;
+    }
+
+    @media (max-width: 960px) {
+      .layout {
+        grid-template-columns: 1fr;
+      }
+
+      .toc {
+        position: static;
+      }
+
+      .content {
+        padding: 24px 20px 32px;
+      }
+
+      .hero {
+        padding: 28px 22px;
+      }
+
+      .hero h1 {
+        font-size: 1.8rem;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <section class="hero">
+      <h1>Feature Management Service Architecture</h1>
+      <p>
+        A system design for managing thousands of feature flags across more than 100 applications,
+        optimized for low-latency evaluation, scalable configuration distribution, operational visibility,
+        and full decision explainability.
+      </p>
+    </section>
+
+    <div class="layout">
+      <aside class="toc">
+        <h2>Contents</h2>
+        <a href="#overview">1. Overview</a>
+        <a href="#high-level-architecture">2. High-Level Architecture</a>
+        <a href="#design-principles">3. Design Principles</a>
+        <a href="#main-components">4. Main Components</a>
+        <a href="#caching-strategy">5. Caching Strategy</a>
+        <a href="#sdk-design">6. SDK Design</a>
+        <a href="#api-design">7. API Design</a>
+        <a href="#data-model">8. Data Model</a>
+        <a href="#evaluation-flow">9. Evaluation Flow</a>
+        <a href="#observability-strategy">10. Observability Strategy</a>
+        <a href="#explainability-model">11. Explainability Model</a>
+        <a href="#scale-and-performance-notes">12. Scale and Performance Notes</a>
+        <a href="#security-and-governance">13. Security and Governance</a>
+        <a href="#suggested-tech-choices">14. Suggested Tech Choices</a>
+        <a href="#recommended-interview-summary">15. Recommended Interview Summary</a>
+      </aside>
+
+      <main class="content">
+        <h2 id="overview">1. Overview</h2>
+        <p>
+          This system is a centralized Feature Management Service for an e-commerce platform that serves
+          more than 100 applications across web, backend, and mobile clients. The primary design goal is
+          to keep flag evaluation latency low while the number of flags, rules, segments, and client
+          applications continues to grow.
+        </p>
+        <div class="card">
+          <p>The backbone of the design is:</p>
+          <ul>
+            <li>Control plane for flag authoring, approval, rollout, audit, and publishing</li>
+            <li>Data plane for ultra-fast local or edge evaluation</li>
+            <li>Push-first distribution with versioned snapshots and delta sync</li>
+            <li>Explainability-first evaluation records so every flag decision can be reconstructed</li>
+          </ul>
+        </div>
+        <p>
+          The system separates management workloads from evaluation workloads. Management APIs can tolerate
+          higher latency and stronger consistency. Evaluation APIs and SDKs prioritize availability, low
+          latency, bounded payload size, and predictable cache behavior.
+        </p>
+
+        <h2 id="high-level-architecture">2. High-Level Architecture</h2>
+        <div class="mermaid">
+flowchart LR
+    A["Admin Console / CI / Release Tools"] --> B["Control Plane API"]
+    B --> C["Flag Metadata Store"]
+    B --> D["Rule Compiler"]
+    D --> E["Config Snapshot Store"]
+    D --> F["Event Bus"]
+    F --> G["Streaming Gateway"]
+    E --> H["Evaluation API"]
+    G --> I["Client SDK Cache"]
+    E --> I
+    H --> J["Edge / Service Cache"]
+    I --> K["App / Service / Mobile Client"]
+    J --> H
+    H --> L["Explain / Audit Store"]
+    K --> M["Observability Pipeline"]
+    H --> M
+        </div>
+
+        <h2 id="design-principles">3. Design Principles</h2>
+        <ul>
+          <li>Evaluate close to the caller whenever possible</li>
+          <li>Keep config distribution push-first, polling as fallback</li>
+          <li>Use immutable, versioned snapshots to simplify cache invalidation</li>
+          <li>Compile rules ahead of time to avoid repeated expensive parsing</li>
+          <li>Return explanations from the same evaluation model used for decisions</li>
+          <li>Bound per-app payload size so growth in global flag count does not linearly increase client memory cost</li>
+        </ul>
+
+        <h2 id="main-components">4. Main Components</h2>
+        <h3>4.1 Control Plane</h3>
+        <p>Responsible for authoring and governance.</p>
+        <ul>
+          <li>Flag management: create, archive, tag, group, assign ownership</li>
+          <li>Environment management: dev, staging, prod, region, tenant</li>
+          <li>Rollout management: percentage rollout, allowlists, segment rules, time windows</li>
+          <li>Release association: bind flags to release trains, experiments, and incident toggles</li>
+          <li>Audit and approval: track who changed what and when</li>
+        </ul>
+
+        <h3>4.2 Rule Compiler</h3>
+        <p>Converts editable rules into runtime-optimized artifacts.</p>
+        <ul>
+          <li>Validates schema and rule references</li>
+          <li>Resolves segment dependencies</li>
+          <li>Precompiles match trees and percentage rollout instructions</li>
+          <li>Produces snapshot bundles and delta events</li>
+          <li>Assigns monotonic version numbers per environment and app scope</li>
+        </ul>
+
+        <h3>4.3 Snapshot Store</h3>
+        <p>Stores immutable published configurations.</p>
+        <ul>
+          <li>Keyed by <code>environment + appScope + version</code></li>
+          <li>Contains only flags relevant to the target app scope</li>
+          <li>Supports full snapshot fetch and delta fetch from a known version</li>
+          <li>Can be backed by object storage or a document/key-value store</li>
+        </ul>
+
+        <h3>4.4 Distribution Gateway</h3>
+        <p>Delivers new versions to SDKs and edge nodes.</p>
+        <ul>
+          <li>Server-Sent Events, WebSocket, or gRPC stream for long-lived connections</li>
+          <li>Emits lightweight invalidation messages: scope, version, checksum</li>
+          <li>Clients fetch delta or full snapshot only when needed</li>
+        </ul>
+
+        <h3>4.5 Evaluation Plane</h3>
+        <p>Supports two modes:</p>
+        <ul>
+          <li>Local SDK evaluation for most mobile/web/backend use cases</li>
+          <li>Remote evaluation API for thin clients, server-side templates, and emergency fallback</li>
+        </ul>
+
+        <h3>4.6 Explainability and Audit Store</h3>
+        <p>Persists evaluation reasoning samples and all management actions.</p>
+        <ul>
+          <li>Management audit log is always retained</li>
+          <li>Evaluation decision logs are sampled by policy, with debug-on-demand support</li>
+          <li>Stores normalized reason codes and context summaries</li>
+        </ul>
+
+        <h2 id="caching-strategy">5. Caching Strategy</h2>
+        <h3>5.1 Core Approach</h3>
+        <p>Use multi-level caching with versioned immutable data.</p>
+        <ul>
+          <li>L1: in-process SDK cache or service memory cache</li>
+          <li>L2: edge/service shared cache such as Redis for remote evaluation nodes</li>
+          <li>L3: snapshot store for full source-of-truth published artifacts</li>
+        </ul>
+        <p>
+          Because snapshots are immutable by version, caches do not require fine-grained invalidation of
+          individual flags. A new publish creates a new version. Clients switch versions atomically after
+          fetching and validating the new snapshot.
+        </p>
+
+        <h3>5.2 Scope-Based Packaging</h3>
+        <p>Do not ship all global flags to every client.</p>
+        <ul>
+          <li>Bundle by application</li>
+          <li>Further filter by environment and optionally region/tenant</li>
+          <li>Support <code>global flags</code> as a separate shared bundle referenced by many apps</li>
+        </ul>
+        <p>
+          This keeps memory and bandwidth roughly proportional to what a client actually uses, not to the
+          total global catalog.
+        </p>
+
+        <h3>5.3 Delta Sync</h3>
+        <p>Clients maintain:</p>
+        <ul>
+          <li>current version</li>
+          <li>checksum</li>
+          <li>last successful refresh timestamp</li>
+        </ul>
+        <p>On publish:</p>
+        <ol>
+          <li>Distribution gateway pushes <code>scope/version/checksum</code></li>
+          <li>SDK compares local version</li>
+          <li>SDK fetches delta if within retention window</li>
+          <li>SDK falls back to full snapshot if delta chain is missing or checksum fails</li>
+        </ol>
+
+        <h3>5.4 Cost Control</h3>
+        <ul>
+          <li>Compress snapshot payloads</li>
+          <li>Use precompiled rules instead of raw DSL for runtime evaluation</li>
+          <li>Deduplicate shared segments and common targeting metadata in bundle format</li>
+          <li>Apply TTL only to fallback polling; primary freshness is event-driven</li>
+          <li>Keep remote evaluation caches warm by environment + app scope, not by individual user</li>
+        </ul>
+
+        <h3>5.5 Failure Behavior</h3>
+        <ul>
+          <li>SDK continues using last known good snapshot on network loss</li>
+          <li>Every snapshot has <code>publishedAt</code>, <code>version</code>, and optional <code>expiresAt</code></li>
+          <li>Policies can declare fail-open or fail-closed per flag category</li>
+          <li>Remote evaluation nodes degrade to cached snapshot if control-plane dependencies are unavailable</li>
+        </ul>
+
+        <h2 id="sdk-design">6. SDK Design</h2>
+        <h3>6.1 SDK Goals</h3>
+        <ul>
+          <li>Same conceptual API across Java, Go, Node.js, iOS, Android, and Web</li>
+          <li>Local evaluation by default</li>
+          <li>Small integration surface</li>
+          <li>Deterministic evaluation behavior across languages</li>
+        </ul>
+
+        <h3>6.2 Common SDK Interface</h3>
+        <pre><code>initialize(config)
+boolVariation(flagKey, context, defaultValue)
+stringVariation(flagKey, context, defaultValue)
+numberVariation(flagKey, context, defaultValue)
+jsonVariation(flagKey, context, defaultValue)
+getEvaluationDetails(flagKey, context, defaultValue)
+trackExposure(flagKey, context, result)
+flush()
+close()</code></pre>
+        <p><code>context</code> should use a normalized schema:</p>
+        <ul>
+          <li><code>subjectKey</code>: userId/deviceId/sessionId/merchantId</li>
+          <li><code>attributes</code>: region, appVersion, platform, locale, membershipLevel, tenantId</li>
+        </ul>
+
+        <h3>6.3 SDK Runtime Model</h3>
+        <ul>
+          <li>Bootstrap from local persisted snapshot if available</li>
+          <li>Start background stream or poller</li>
+          <li>Evaluate against in-memory compiled snapshot</li>
+          <li>Emit exposure and health metrics asynchronously</li>
+          <li>Support offline mode for mobile apps</li>
+        </ul>
+
+        <h3>6.4 Consistency Across Client Types</h3>
+        <ul>
+          <li>Use a shared evaluation specification and compatibility test suite</li>
+          <li>Define hashing algorithm, rule precedence, null handling, and percentage rollout semantics centrally</li>
+          <li>Publish golden test vectors for every SDK</li>
+        </ul>
+
+        <h2 id="api-design">7. API Design</h2>
+        <h3>7.1 Management APIs</h3>
+        <div class="card">
+          <p><strong>Flag lifecycle</strong></p>
+          <ul>
+            <li><code>POST /api/v1/flags</code></li>
+            <li><code>GET /api/v1/flags/{flagKey}</code></li>
+            <li><code>PATCH /api/v1/flags/{flagKey}</code></li>
+            <li><code>POST /api/v1/flags/{flagKey}/archive</code></li>
+          </ul>
+          <p><strong>Rule and rollout management</strong></p>
+          <ul>
+            <li><code>POST /api/v1/flags/{flagKey}/rules</code></li>
+            <li><code>PATCH /api/v1/flags/{flagKey}/rules/{ruleId}</code></li>
+            <li><code>POST /api/v1/flags/{flagKey}/publish</code></li>
+            <li><code>POST /api/v1/flags/{flagKey}/rollback</code></li>
+          </ul>
+          <p><strong>Segments and targeting</strong></p>
+          <ul>
+            <li><code>POST /api/v1/segments</code></li>
+            <li><code>GET /api/v1/segments/{segmentKey}</code></li>
+            <li><code>POST /api/v1/segments/{segmentKey}/members:import</code></li>
+          </ul>
+          <p><strong>Release association</strong></p>
+          <ul>
+            <li><code>POST /api/v1/releases</code></li>
+            <li><code>POST /api/v1/flags/{flagKey}/releases/{releaseId}:bind</code></li>
+          </ul>
+          <p><strong>Audit and explain admin</strong></p>
+          <ul>
+            <li><code>GET /api/v1/audit-logs</code></li>
+            <li><code>GET /api/v1/flags/{flagKey}/history</code></li>
+            <li><code>POST /api/v1/evaluations:explain</code></li>
+          </ul>
+        </div>
+
+        <h3>7.2 Distribution APIs</h3>
+        <ul>
+          <li><code>GET /api/v1/configs/{environment}/{appScope}/snapshot</code></li>
+          <li><code>GET /api/v1/configs/{environment}/{appScope}/delta?fromVersion=123</code></li>
+          <li><code>GET /api/v1/configs/stream?environment=prod&amp;appScope=checkout-web</code></li>
+        </ul>
+        <p>Snapshot response shape:</p>
+        <pre><code>{
+  "environment": "prod",
+  "appScope": "checkout-web",
+  "version": 124,
+  "checksum": "sha256:...",
+  "publishedAt": "2026-05-14T10:00:00Z",
+  "flags": [],
+  "segments": []
+}</code></pre>
+
+        <h3>7.3 Evaluation APIs</h3>
+        <p>Single flag:</p>
+        <ul>
+          <li><code>POST /api/v1/evaluations/flags/{flagKey}</code></li>
+        </ul>
+        <p>Batch:</p>
+        <ul>
+          <li><code>POST /api/v1/evaluations:batch</code></li>
+        </ul>
+        <p>Example request:</p>
+        <pre><code>{
+  "environment": "prod",
+  "appScope": "checkout-api",
+  "context": {
+    "subjectKey": "user-123",
+    "attributes": {
+      "region": "cn-east",
+      "platform": "ios",
+      "appVersion": "9.2.1",
+      "membershipLevel": "gold"
+    }
+  }
+}</code></pre>
+        <p>Example response:</p>
+        <pre><code>{
+  "flagKey": "new-checkout",
+  "enabled": true,
+  "variant": "B",
+  "version": 124,
+  "reasonCode": "SEGMENT_MATCH",
+  "matchedRuleId": "rule-8",
+  "releaseId": "release-2026-05-checkout",
+  "targetRegion": "cn-east"
+}</code></pre>
+
+        <h3>7.4 Explain API</h3>
+        <p><code>POST /api/v1/evaluations:explain</code></p>
+        <p>Response fields:</p>
+        <ul>
+          <li>final decision</li>
+          <li>evaluated environment and app scope</li>
+          <li>rules checked in order</li>
+          <li>matched segment ids</li>
+          <li>excluded conditions</li>
+          <li>rollout bucket value</li>
+          <li>release binding</li>
+          <li>snapshot version</li>
+          <li>time of evaluation</li>
+        </ul>
+
+        <h2 id="data-model">8. Data Model</h2>
+        <p>Core entities:</p>
+        <ul>
+          <li><code>Flag</code>: key, type, owner, lifecycle state, default value</li>
+          <li><code>FlagRule</code>: priority, conditions, rollout strategy, variant mapping</li>
+          <li><code>Segment</code>: reusable targeting definition or imported cohort</li>
+          <li><code>ReleaseBinding</code>: release id, deployment metadata, associated flags</li>
+          <li><code>ConfigSnapshot</code>: immutable published artifact for a scope/version</li>
+          <li><code>AuditLog</code>: management mutation history</li>
+          <li><code>EvaluationTrace</code>: sampled or on-demand evaluation evidence</li>
+        </ul>
+
+        <h2 id="evaluation-flow">9. Evaluation Flow</h2>
+        <div class="mermaid">
+sequenceDiagram
+    participant Client
+    participant SDK
+    participant Cache
+    participant ExplainStore
+
+    Client->>SDK: evaluate(flagKey, context)
+    SDK->>Cache: read active snapshot
+    Cache-->>SDK: version 124
+    SDK->>SDK: execute compiled rules
+    SDK-->>Client: enabled/variant/details
+    SDK->>ExplainStore: async sampled trace
+        </div>
+
+        <p>Remote evaluation path:</p>
+        <div class="mermaid">
+sequenceDiagram
+    participant App
+    participant EvalAPI
+    participant Redis
+    participant SnapshotStore
+
+    App->>EvalAPI: POST /evaluations
+    EvalAPI->>Redis: lookup scope snapshot
+    alt hit
+        Redis-->>EvalAPI: compiled snapshot
+    else miss
+        EvalAPI->>SnapshotStore: fetch latest snapshot
+        SnapshotStore-->>EvalAPI: snapshot
+        EvalAPI->>Redis: populate cache
+    end
+    EvalAPI->>EvalAPI: evaluate rules
+    EvalAPI-->>App: result + explanation summary
+        </div>
+
+        <h2 id="observability-strategy">10. Observability Strategy</h2>
+        <h3>10.1 Metrics</h3>
+        <p>Control plane:</p>
+        <ul>
+          <li>publish latency</li>
+          <li>compile success/failure rate</li>
+          <li>snapshot size by app scope</li>
+          <li>active stream connections</li>
+        </ul>
+        <p>Evaluation plane:</p>
+        <ul>
+          <li>evaluation QPS</li>
+          <li>p50/p95/p99 latency</li>
+          <li>cache hit rate by layer</li>
+          <li>stale snapshot age</li>
+          <li>remote fallback rate</li>
+          <li>explain request rate</li>
+          <li>rule evaluation cost per request</li>
+        </ul>
+        <p>SDK:</p>
+        <ul>
+          <li>initialization success rate</li>
+          <li>stream reconnect count</li>
+          <li>last refresh age</li>
+          <li>exposure queue backlog</li>
+        </ul>
+
+        <h3>10.2 Logs</h3>
+        <p>Structured logs with:</p>
+        <ul>
+          <li><code>flagKey</code></li>
+          <li><code>environment</code></li>
+          <li><code>appScope</code></li>
+          <li><code>version</code></li>
+          <li><code>reasonCode</code></li>
+          <li><code>matchedRuleId</code></li>
+          <li><code>subjectHash</code></li>
+          <li><code>region</code></li>
+          <li><code>releaseId</code></li>
+          <li><code>traceId</code></li>
+        </ul>
+        <p>Sensitive attributes should be hashed or redacted.</p>
+
+        <h3>10.3 Tracing</h3>
+        <p>Add OpenTelemetry spans for:</p>
+        <ul>
+          <li>snapshot fetch</li>
+          <li>delta apply</li>
+          <li>evaluation</li>
+          <li>remote fallback</li>
+          <li>explain generation</li>
+        </ul>
+
+        <h3>10.4 Alerting</h3>
+        <ul>
+          <li>publish failures above threshold</li>
+          <li>snapshot propagation delay too high</li>
+          <li>stale snapshot age exceeds SLO</li>
+          <li>cache hit rate collapse</li>
+          <li>evaluation latency SLO breach</li>
+          <li>SDK reconnect storms</li>
+        </ul>
+
+        <h2 id="explainability-model">11. Explainability Model</h2>
+        <p>
+          Every evaluation should be explainable using the same normalized schema whether it came from local
+          SDK evaluation or remote API evaluation.
+        </p>
+        <p>Required explain fields:</p>
+        <ul>
+          <li><code>isEnabled</code></li>
+          <li><code>variant</code></li>
+          <li><code>flagKey</code></li>
+          <li><code>environment</code></li>
+          <li><code>appScope</code></li>
+          <li><code>region</code></li>
+          <li><code>subjectKeyHash</code></li>
+          <li><code>matchedRuleId</code></li>
+          <li><code>matchedSegmentIds</code></li>
+          <li><code>reasonCode</code></li>
+          <li><code>releaseId</code></li>
+          <li><code>snapshotVersion</code></li>
+          <li><code>evaluatedAt</code></li>
+        </ul>
+        <p>Reason code examples:</p>
+        <ul>
+          <li><code>DEFAULT_VALUE</code></li>
+          <li><code>FLAG_DISABLED</code></li>
+          <li><code>SEGMENT_MATCH</code></li>
+          <li><code>SEGMENT_NO_MATCH</code></li>
+          <li><code>PERCENTAGE_ROLLOUT</code></li>
+          <li><code>TARGETING_EXCLUDED</code></li>
+          <li><code>PREREQUISITE_FAILED</code></li>
+          <li><code>STALE_SNAPSHOT_FALLBACK</code></li>
+        </ul>
+        <div class="callout">
+          This lets the team answer whether a flag is enabled, for which subject or cohort, in which region
+          or tenant, under which release or experiment, and by which exact rule and snapshot version.
+        </div>
+
+        <h2 id="scale-and-performance-notes">12. Scale and Performance Notes</h2>
+        <ul>
+          <li>Use local evaluation for the vast majority of requests to avoid central bottlenecks</li>
+          <li>Keep snapshots app-scoped to avoid full-catalog growth pressure</li>
+          <li>Precompile rules to keep evaluation CPU predictable</li>
+          <li>Use batch evaluation APIs for server-side rendering or gateway use cases</li>
+          <li>Sample decision traces by default and enable full traces only for debug sessions or flagged subjects</li>
+        </ul>
+
+        <h2 id="security-and-governance">13. Security and Governance</h2>
+        <ul>
+          <li>RBAC by team, environment, and app scope</li>
+          <li>Approval workflow for production publishes</li>
+          <li>Audit log for every management mutation</li>
+          <li>Signed SDK credentials for config distribution</li>
+          <li>Encryption in transit and at rest</li>
+          <li>PII minimization in evaluation context and traces</li>
+        </ul>
+
+        <h2 id="suggested-tech-choices">14. Suggested Tech Choices</h2>
+        <p>One reasonable implementation stack:</p>
+        <ul>
+          <li>Control plane API: Java/Spring Boot or Go</li>
+          <li>Metadata store: PostgreSQL</li>
+          <li>Snapshot store: S3-compatible object storage or document KV store</li>
+          <li>Distribution: SSE or gRPC streaming</li>
+          <li>Evaluation cache: in-memory + Redis</li>
+          <li>Observability: OpenTelemetry + Prometheus + Grafana + ELK</li>
+        </ul>
+
+        <h2 id="recommended-interview-summary">15. Recommended Interview Summary</h2>
+        <p>If presenting this in an interview, emphasize these tradeoffs:</p>
+        <ol>
+          <li>Separate control plane and data plane</li>
+          <li>Prefer local evaluation with push-based config updates</li>
+          <li>Use immutable versioned snapshots instead of mutating per-flag cache entries</li>
+          <li>Scope config bundles per app/environment to control cost as the catalog grows</li>
+          <li>Build explainability into the evaluation contract, not as a later add-on</li>
+        </ol>
+
+        <p class="footer">
+          Rendered from the architecture solution for the Align Expert Software Engineer R2 design exercise.
+        </p>
+      </main>
+    </div>
+  </div>
+
+  <script type="module">
+    import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs";
+    mermaid.initialize({
+      startOnLoad: true,
+      theme: "base",
+      themeVariables: {
+        primaryColor: "#f6e3d5",
+        primaryTextColor: "#1f2937",
+        primaryBorderColor: "#a64b2a",
+        lineColor: "#8a3b20",
+        secondaryColor: "#fff8f0",
+        tertiaryColor: "#f4efe7",
+        fontFamily: "Segoe UI, PingFang SC, Microsoft YaHei, sans-serif"
+      }
+    });
+  </script>
+</body>
+</html>
