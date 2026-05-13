@@ -53,13 +53,7 @@ For this workspace, use:
 mvn -gs .mvn/offline-settings.xml -s .mvn/offline-settings.xml -o -DskipTests clean package
 ```
 
-The current local environment could not download new dependencies because network approval did not complete. To keep the backend runnable here, the cached H2 jar was copied to:
-
-```text
-backend/lib/h2-1.3.168.jar
-```
-
-This is a local workaround. In a normal networked environment, replace the system-scoped H2 dependency with a normal Maven H2 runtime dependency.
+The backend now uses a standard Maven H2 runtime dependency. If Maven dependency download is blocked, configure the local proxy first.
 
 ## Run Backend
 

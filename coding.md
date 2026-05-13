@@ -78,7 +78,7 @@ Implement the feature management take-home project in subdirectories:
 - Use `mvn -s .mvn/settings.xml ...` for local commands.
 - Current fallback: use cached dependencies in `D:/Java/maven-repository`; backend is Spring Boot Web + H2 JDBC, not JPA, because Spring Data JPA is not cached locally and network approval did not complete.
 - Added `.mvn/offline-settings.xml` for offline builds against existing `D:/Java/maven-repository` cache.
-- Copied cached H2 jar into `backend/lib/h2-1.3.168.jar` and referenced it as a system dependency so local testing can proceed without network access.
+- Replaced temporary H2 `systemPath` dependency with standard Maven runtime dependency.
 - Restored Spring Boot `3.5.14`; replaced `spring-boot-starter-test` with cached JUnit `4.13.2` + AssertJ `3.19.0` so tests can run offline with cached Surefire.
 - Added Maven compiler `-parameters` support after local API test found Spring MVC parameter-name binding issue.
 - Added CORS origins for `http://127.0.0.1:5173` and `http://127.0.0.1:5174` after browser showed `TypeError: Failed to fetch`.
