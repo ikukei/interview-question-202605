@@ -1,0 +1,14 @@
+spring:
+  jackson:
+    serialization:
+      indent-output: true
+
+feature:
+  datasource:
+    url: jdbc:oracle:thin:@//localhost:1521/FREEPDB1
+    username: FEATURE_FLAG
+    password: change-me
+    driver-class-name: oracle.jdbc.OracleDriver
+
+# This profile documents the production shape only. The take-home demo runs with
+# the local H2 profile and does not require an Oracle instance.
