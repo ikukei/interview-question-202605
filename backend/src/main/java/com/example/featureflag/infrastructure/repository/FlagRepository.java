@@ -1,55 +1,31 @@
 package com.example.featureflag.infrastructure.repository;
 
 import com.example.featureflag.domain.FlagEntity;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.Statement;
 import java.sql.Timestamp;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.jdbc.support.GeneratedKeyHolder;
+import org.springframework.jdbc.support.KeyHolder;
 import org.springframework.stereotype.Repository;
 
 @Repository
 public class FlagRepository {
-    private final FeatureDataSource dataSource;
+    private final JdbcTemplate jdbcTemplate;
 
-    public FlagRepository(FeatureDataSource dataSource) {
-        this.dataSource = dataSource;
+    public FlagRepository(JdbcTemplate jdbcTemplate) {
+        this.jdbcTemplate = jdbcTemplate;
     }
 
     public List<FlagEntity> findByAppKeyAndEnvironmentOrderByFlagKeyAsc(String appKey, String environment) {
         String sql = "select * from ff_flag where app_key = ? and environment = ? order by flag_key";
-        try (Connection connection = dataSource.getConnection();
-             PreparedStatement statement = connection.prepareStatement(sql)) {
-            statement.setString(1, appKey);
-            statement.setString(2, environment);
-            try (ResultSet rs = statement.executeQuery()) {
-                List<FlagEntity> flags = new ArrayList<>();
-                while (rs.next()) {
-                    flags.add(map(rs));
-                }
-                return flags;
-            }
-        } catch (Exception ex) {
-            throw new IllegalStateException("Unable to list flags", ex);
-        }
+        return jdbcTemplate.query(sql, this::mapRow, appKey, environment);
     }
 
     public Optional<FlagEntity> findByFlagKeyAndAppKeyAndEnvironment(String flagKey, String appKey, String environment) {
         String sql = "select * from ff_flag where flag_key = ? and app_key = ? and environment = ?";
-        try (Connection connection = dataSource.getConnection();
-             PreparedStatement statement = connection.prepareStatement(sql)) {
-            statement.setString(1, flagKey);
-            statement.setString(2, appKey);
-            statement.setString(3, environment);
-            try (ResultSet rs = statement.executeQuery()) {
-                return rs.next() ? Optional.of(map(rs)) : Optional.empty();
-            }
-        } catch (Exception ex) {
-            throw new IllegalStateException("Unable to find flag", ex);
-        }
+        List<FlagEntity> result = jdbcTemplate.query(sql, this::mapRow, flagKey, appKey, environment);
+        return result.isEmpty() ? Optional.empty() : Optional.of(result.get(0));
     }
 
     public FlagEntity save(FlagEntity flag) {
@@ -61,19 +37,16 @@ public class FlagRepository {
                 insert into ff_flag(flag_key, app_key, environment, name, description, type, default_value, enabled, release_key, status, created_at, updated_at)
                 values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """;
-        try (Connection connection = dataSource.getConnection();
-             PreparedStatement statement = connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
-            bindFlag(statement, flag);
-            statement.executeUpdate();
-            try (ResultSet keys = statement.getGeneratedKeys()) {
-                if (keys.next()) {
-                    flag.setId(keys.getLong(1));
-                }
-            }
-            return flag;
-        } catch (Exception ex) {
-            throw new IllegalStateException("Unable to create flag", ex);
+        KeyHolder keyHolder = new GeneratedKeyHolder();
+        jdbcTemplate.update(connection -> {
+            var stmt = connection.prepareStatement(sql, new String[]{"id"});
+            bindFlag(stmt, flag);
+            return stmt;
+        }, keyHolder);
+        if (keyHolder.getKey() != null) {
+            flag.setId(keyHolder.getKey().longValue());
         }
+        return flag;
     }
 
     private FlagEntity update(FlagEntity flag) {
@@ -81,18 +54,14 @@ public class FlagRepository {
                 update ff_flag set flag_key = ?, app_key = ?, environment = ?, name = ?, description = ?, type = ?, default_value = ?,
                   enabled = ?, release_key = ?, status = ?, created_at = ?, updated_at = ? where id = ?
                 """;
-        try (Connection connection = dataSource.getConnection();
-             PreparedStatement statement = connection.prepareStatement(sql)) {
-            bindFlag(statement, flag);
-            statement.setLong(13, flag.getId());
-            statement.executeUpdate();
-            return flag;
-        } catch (Exception ex) {
-            throw new IllegalStateException("Unable to update flag", ex);
-        }
+        jdbcTemplate.update(sql, flag.getFlagKey(), flag.getAppKey(), flag.getEnvironment(), flag.getName(),
+                flag.getDescription(), flag.getType(), flag.getDefaultValue(), flag.isEnabled(),
+                flag.getReleaseKey(), flag.getStatus(), Timestamp.from(flag.getCreatedAt()),
+                Timestamp.from(flag.getUpdatedAt()), flag.getId());
+        return flag;
     }
 
-    private void bindFlag(PreparedStatement statement, FlagEntity flag) throws Exception {
+    private void bindFlag(java.sql.PreparedStatement statement, FlagEntity flag) throws java.sql.SQLException {
         statement.setString(1, flag.getFlagKey());
         statement.setString(2, flag.getAppKey());
         statement.setString(3, flag.getEnvironment());
@@ -107,7 +76,7 @@ public class FlagRepository {
         statement.setTimestamp(12, Timestamp.from(flag.getUpdatedAt()));
     }
 
-    private FlagEntity map(ResultSet rs) throws Exception {
+    private FlagEntity mapRow(java.sql.ResultSet rs, int rowNum) throws java.sql.SQLException {
         FlagEntity flag = new FlagEntity();
         flag.setId(rs.getLong("id"));
         flag.setFlagKey(rs.getString("flag_key"));

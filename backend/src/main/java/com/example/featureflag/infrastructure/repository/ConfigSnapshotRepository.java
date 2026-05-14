@@ -1,49 +1,32 @@
 package com.example.featureflag.infrastructure.repository;
 
 import com.example.featureflag.domain.ConfigSnapshotEntity;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.Statement;
 import java.sql.Timestamp;
+import java.util.List;
 import java.util.Optional;
+import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.jdbc.support.GeneratedKeyHolder;
+import org.springframework.jdbc.support.KeyHolder;
 import org.springframework.stereotype.Repository;
 
 @Repository
 public class ConfigSnapshotRepository {
-    private final FeatureDataSource dataSource;
+    private final JdbcTemplate jdbcTemplate;
 
-    public ConfigSnapshotRepository(FeatureDataSource dataSource) {
-        this.dataSource = dataSource;
+    public ConfigSnapshotRepository(JdbcTemplate jdbcTemplate) {
+        this.jdbcTemplate = jdbcTemplate;
     }
 
     public Optional<ConfigSnapshotEntity> findTopByAppKeyAndEnvironmentOrderByVersionDesc(String appKey, String environment) {
         String sql = "select * from ff_config_snapshot where app_key = ? and environment = ? order by version desc limit 1";
-        try (Connection connection = dataSource.getConnection();
-             PreparedStatement statement = connection.prepareStatement(sql)) {
-            statement.setString(1, appKey);
-            statement.setString(2, environment);
-            try (ResultSet rs = statement.executeQuery()) {
-                return rs.next() ? Optional.of(map(rs)) : Optional.empty();
-            }
-        } catch (Exception ex) {
-            throw new IllegalStateException("Unable to find latest snapshot", ex);
-        }
+        List<ConfigSnapshotEntity> result = jdbcTemplate.query(sql, this::mapRow, appKey, environment);
+        return result.isEmpty() ? Optional.empty() : Optional.of(result.get(0));
     }
 
     public Optional<ConfigSnapshotEntity> findByAppKeyAndEnvironmentAndVersion(String appKey, String environment, long version) {
         String sql = "select * from ff_config_snapshot where app_key = ? and environment = ? and version = ?";
-        try (Connection connection = dataSource.getConnection();
-             PreparedStatement statement = connection.prepareStatement(sql)) {
-            statement.setString(1, appKey);
-            statement.setString(2, environment);
-            statement.setLong(3, version);
-            try (ResultSet rs = statement.executeQuery()) {
-                return rs.next() ? Optional.of(map(rs)) : Optional.empty();
-            }
-        } catch (Exception ex) {
-            throw new IllegalStateException("Unable to find snapshot", ex);
-        }
+        List<ConfigSnapshotEntity> result = jdbcTemplate.query(sql, this::mapRow, appKey, environment, version);
+        return result.isEmpty() ? Optional.empty() : Optional.of(result.get(0));
     }
 
     public ConfigSnapshotEntity save(ConfigSnapshotEntity entity) {
@@ -51,28 +34,25 @@ public class ConfigSnapshotRepository {
                 insert into ff_config_snapshot(app_key, environment, version, checksum, snapshot_json, published_by, published_at)
                 values (?, ?, ?, ?, ?, ?, ?)
                 """;
-        try (Connection connection = dataSource.getConnection();
-             PreparedStatement statement = connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
-            statement.setString(1, entity.getAppKey());
-            statement.setString(2, entity.getEnvironment());
-            statement.setLong(3, entity.getVersion());
-            statement.setString(4, entity.getChecksum());
-            statement.setString(5, entity.getSnapshotJson());
-            statement.setString(6, entity.getPublishedBy());
-            statement.setTimestamp(7, Timestamp.from(entity.getPublishedAt()));
-            statement.executeUpdate();
-            try (ResultSet keys = statement.getGeneratedKeys()) {
-                if (keys.next()) {
-                    entity.setId(keys.getLong(1));
-                }
-            }
-            return entity;
-        } catch (Exception ex) {
-            throw new IllegalStateException("Unable to save snapshot", ex);
+        KeyHolder keyHolder = new GeneratedKeyHolder();
+        jdbcTemplate.update(connection -> {
+            var stmt = connection.prepareStatement(sql, new String[]{"id"});
+            stmt.setString(1, entity.getAppKey());
+            stmt.setString(2, entity.getEnvironment());
+            stmt.setLong(3, entity.getVersion());
+            stmt.setString(4, entity.getChecksum());
+            stmt.setString(5, entity.getSnapshotJson());
+            stmt.setString(6, entity.getPublishedBy());
+            stmt.setTimestamp(7, Timestamp.from(entity.getPublishedAt()));
+            return stmt;
+        }, keyHolder);
+        if (keyHolder.getKey() != null) {
+            entity.setId(keyHolder.getKey().longValue());
         }
+        return entity;
     }
 
-    private ConfigSnapshotEntity map(ResultSet rs) throws Exception {
+    private ConfigSnapshotEntity mapRow(java.sql.ResultSet rs, int rowNum) throws java.sql.SQLException {
         ConfigSnapshotEntity entity = new ConfigSnapshotEntity();
         entity.setId(rs.getLong("id"));
         entity.setAppKey(rs.getString("app_key"));

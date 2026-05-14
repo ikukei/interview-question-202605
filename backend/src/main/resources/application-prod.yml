@@ -2,8 +2,6 @@ spring:
   jackson:
     serialization:
       indent-output: true
-
-feature:
   datasource:
     url: jdbc:oracle:thin:@//localhost:1521/FREEPDB1
     username: FEATURE_FLAG

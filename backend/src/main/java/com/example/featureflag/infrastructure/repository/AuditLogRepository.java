@@ -1,18 +1,16 @@
 package com.example.featureflag.infrastructure.repository;
 
 import com.example.featureflag.domain.AuditLogEntity;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.Statement;
 import java.sql.Timestamp;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Repository;
 
 @Repository
 public class AuditLogRepository {
-    private final FeatureDataSource dataSource;
+    private final JdbcTemplate jdbcTemplate;
 
-    public AuditLogRepository(FeatureDataSource dataSource) {
-        this.dataSource = dataSource;
+    public AuditLogRepository(JdbcTemplate jdbcTemplate) {
+        this.jdbcTemplate = jdbcTemplate;
     }
 
     public AuditLogEntity save(AuditLogEntity log) {
@@ -20,19 +18,9 @@ public class AuditLogRepository {
                 insert into ff_audit_log(actor, action, resource_type, resource_key, before_json, after_json, created_at)
                 values (?, ?, ?, ?, ?, ?, ?)
                 """;
-        try (Connection connection = dataSource.getConnection();
-             PreparedStatement statement = connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
-            statement.setString(1, log.getActor());
-            statement.setString(2, log.getAction());
-            statement.setString(3, log.getResourceType());
-            statement.setString(4, log.getResourceKey());
-            statement.setString(5, log.getBeforeJson());
-            statement.setString(6, log.getAfterJson());
-            statement.setTimestamp(7, Timestamp.from(log.getCreatedAt()));
-            statement.executeUpdate();
-            return log;
-        } catch (Exception ex) {
-            throw new IllegalStateException("Unable to save audit log", ex);
-        }
+        jdbcTemplate.update(sql, log.getActor(), log.getAction(), log.getResourceType(), 
+                log.getResourceKey(), log.getBeforeJson(), log.getAfterJson(), 
+                Timestamp.from(log.getCreatedAt()));
+        return log;
     }
 }

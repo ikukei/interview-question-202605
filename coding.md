@@ -1,6 +1,6 @@
 # Local Coding Progress
 
-Last updated: 2026-05-14
+Last updated: 2026-05-15
 
 ## Goal
 
@@ -22,13 +22,19 @@ Implement the feature management take-home project in subdirectories:
 - `backend` module created.
 - Backend local H2 configuration added.
 - Backend production Oracle profile placeholder added.
-- Backend JPA entities added:
+- Backend entities added:
   - `ApplicationEntity`
   - `FlagEntity`
   - `RuleEntity`
   - `ConfigSnapshotEntity`
   - `AuditLogEntity`
-- Backend repositories added.
+- Backend repositories refactored to use standard Spring Boot JdbcTemplate instead of custom FeatureDataSource:
+  - ApplicationRepository
+  - FlagRepository
+  - RuleRepository
+  - ConfigSnapshotRepository
+  - AuditLogRepository
+  - SchemaInitializer
 - Backend DTO records added.
 - Backend services added:
   - `FlagService`
@@ -67,6 +73,37 @@ Implement the feature management take-home project in subdirectories:
 - Added `npm start` aliases for both Vue apps.
 - README added with local run instructions and environment notes.
 
+### Refactoring Summary (2026-05-15)
+
+#### Why refactor from custom FeatureDataSource to JdbcTemplate?
+
+1. **Standard Spring Boot convention**: Spring Boot autoconfigures DataSource and JdbcTemplate automatically when using standard `spring.datasource` properties.
+2. **Less boilerplate code**: No need to manually manage JDBC connections and statement resources with try-with-resources - JdbcTemplate handles this internally.
+3. **Better integration**: JdbcTemplate supports GeneratedKeyHolder for capturing auto-generated IDs, simplifying insert operations.
+4. **Easier extension**: JdbcTemplate provides convenience methods for common CRUD operations that we can leverage later.
+
+#### Changes made:
+
+1. **Updated configuration** (`application-local.yml` and `application-prod.yml`):
+   - Renamed `feature.datasource` prefix to standard `spring.datasource`
+   - Spring Boot will automatically create DataSource, JdbcTemplate, and TransactionManager beans
+
+2. **Refactored all Repository classes**:
+   - Changed dependencies from `FeatureDataSource` to `JdbcTemplate`
+   - Replaced manual connection/statement management with JdbcTemplate methods:
+     - `jdbcTemplate.query()` for select operations
+     - `jdbcTemplate.update()` for insert/update/delete operations
+     - `GeneratedKeyHolder` for capturing auto-generated IDs
+     - `jdbcTemplate.execute()` for DDL statements
+
+3. **Removed FeatureDataSource class**:
+   - Custom driver loading class is no longer needed
+   - Spring Boot handles driver class loading automatically
+
+4. **Simplified SchemaInitializer**:
+   - Removed InitializingBean interface and afterPropertiesSet method
+   - Directly called initializeSchema() from constructor for simplicity
+
 ### In Progress
 
 - Maven Surefire automatic test execution is blocked by incomplete local provider cache; test source exists, but local Surefire providers are incomplete.
@@ -75,7 +112,7 @@ Implement the feature management take-home project in subdirectories:
 
 - Global Maven settings force `D:/Java/maven-repository`, which is not writable from this workspace.
 - Added project-local `.mvn/settings.xml`.
-- Use `mvn -s .mvn/settings.xml ...` for local commands.
+- Use `mvn -s .mvn/settings.xml` for local commands.
 - Current fallback: use cached dependencies in `D:/Java/maven-repository`; backend is Spring Boot Web + H2 JDBC, not JPA, because Spring Data JPA is not cached locally and network approval did not complete.
 - Added `.mvn/offline-settings.xml` for offline builds against existing `D:/Java/maven-repository` cache.
 - Replaced temporary H2 `systemPath` dependency with standard Maven runtime dependency.
