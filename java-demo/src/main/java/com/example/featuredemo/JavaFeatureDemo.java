@@ -3,12 +3,20 @@ package com.example.featuredemo;
 import com.example.featureflagsdk.FeatureClient;
 import com.example.featureflagsdk.FeatureContext;
 import com.example.featureflagsdk.FeatureEvaluation;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 
 public class JavaFeatureDemo {
+    private static final DateTimeFormatter FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+    
     public static void main(String[] args) {
         String baseUrl = arg(args, 0, "http://localhost:8080");
         String subjectKey = arg(args, 1, "java-demo-user");
         String region = arg(args, 2, "us-east");
+        int pollInterval = Integer.parseInt(arg(args, 3, "3"));
 
         FeatureClient client = FeatureClient.builder()
                 .baseUrl(baseUrl)
@@ -22,13 +30,55 @@ public class JavaFeatureDemo {
                 .attribute("platform", "java-cli")
                 .build();
 
-        FeatureEvaluation evaluation = client.evaluate("new-checkout", context, "false");
-        System.out.println("Feature flag: " + evaluation.flagKey());
-        System.out.println("Feature value: " + evaluation.value());
-        System.out.println("Enabled: " + evaluation.enabled());
-        System.out.println("Reason: " + evaluation.reasonCode());
-        System.out.println("Snapshot version: " + evaluation.snapshotVersion());
-        System.out.println("Release: " + evaluation.releaseKey());
+        Set<String> knownFlags = new HashSet<>();
+        
+        System.out.println("=== Java Feature Flag Demo ===");
+        System.out.println("Polling for feature flags every " + pollInterval + " seconds...");
+        System.out.println("Press Ctrl+C to exit.\n");
+
+        while (true) {
+            try {
+                List<String> currentFlags = client.listFlagKeys();
+                
+                for (String flagKey : currentFlags) {
+                    if (!knownFlags.contains(flagKey)) {
+                        System.out.println("\n[" + LocalDateTime.now().format(FORMATTER) + "] NEW FLAG DETECTED: " + flagKey);
+                        FeatureEvaluation evaluation = client.evaluate(flagKey, context, "false");
+                        printEvaluation(evaluation);
+                        knownFlags.add(flagKey);
+                    }
+                }
+
+                if (!currentFlags.isEmpty()) {
+                    System.out.println("\n[" + LocalDateTime.now().format(FORMATTER) + "] All feature flags (" + currentFlags.size() + "):");
+                    List<FeatureEvaluation> evaluations = client.evaluateAll(context, "false");
+                    for (FeatureEvaluation eval : evaluations) {
+                        System.out.println("- " + eval.flagKey() + ": " + eval.value() + " (enabled: " + eval.enabled() + ")");
+                    }
+                } else {
+                    System.out.println("[" + LocalDateTime.now().format(FORMATTER) + "] No feature flags found");
+                }
+
+                Thread.sleep(pollInterval * 1000);
+            } catch (Exception e) {
+                System.err.println("[" + LocalDateTime.now().format(FORMATTER) + "] Error: " + e.getMessage());
+                try {
+                    Thread.sleep(pollInterval * 1000);
+                } catch (InterruptedException ie) {
+                    Thread.currentThread().interrupt();
+                    break;
+                }
+            }
+        }
+    }
+
+    private static void printEvaluation(FeatureEvaluation evaluation) {
+        System.out.println("  Flag Key: " + evaluation.flagKey());
+        System.out.println("  Value: " + evaluation.value());
+        System.out.println("  Enabled: " + evaluation.enabled());
+        System.out.println("  Reason: " + evaluation.reasonCode());
+        System.out.println("  Snapshot Version: " + evaluation.snapshotVersion());
+        System.out.println("  Release: " + evaluation.releaseKey());
     }
 
     private static String arg(String[] args, int index, String defaultValue) {

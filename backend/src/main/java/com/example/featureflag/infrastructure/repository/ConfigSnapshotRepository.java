@@ -18,7 +18,7 @@ public class ConfigSnapshotRepository {
     }
 
     public Optional<ConfigSnapshotEntity> findTopByAppKeyAndEnvironmentOrderByVersionDesc(String appKey, String environment) {
-        String sql = "select * from ff_config_snapshot where app_key = ? and environment = ? order by version desc limit 1";
+        String sql = "select * from ff_config_snapshot where app_key = ? and environment = ? order by version desc fetch first 1 row only";
         List<ConfigSnapshotEntity> result = jdbcTemplate.query(sql, this::mapRow, appKey, environment);
         return result.isEmpty() ? Optional.empty() : Optional.of(result.get(0));
     }
