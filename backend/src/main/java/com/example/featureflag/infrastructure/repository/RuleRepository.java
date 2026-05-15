@@ -4,16 +4,19 @@ import com.example.featureflag.domain.RuleEntity;
 import java.sql.Timestamp;
 import java.util.List;
 import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.jdbc.support.GeneratedKeyHolder;
-import org.springframework.jdbc.support.KeyHolder;
+import org.springframework.jdbc.core.simple.SimpleJdbcInsert;
 import org.springframework.stereotype.Repository;
 
 @Repository
 public class RuleRepository {
     private final JdbcTemplate jdbcTemplate;
+    private final SimpleJdbcInsert insertActor;
 
     public RuleRepository(JdbcTemplate jdbcTemplate) {
         this.jdbcTemplate = jdbcTemplate;
+        this.insertActor = new SimpleJdbcInsert(jdbcTemplate)
+                .withTableName("ff_rule")
+                .usingGeneratedKeyColumns("id");
     }
 
     public List<RuleEntity> findByFlagIdOrderByPriorityAsc(Long flagId) {
@@ -22,26 +25,18 @@ public class RuleRepository {
     }
 
     public RuleEntity save(RuleEntity rule) {
-        String sql = """
-                insert into ff_rule(flag_id, priority, condition_json, rollout_percentage, variation_value, enabled, created_at, updated_at)
-                values (?, ?, ?, ?, ?, ?, ?, ?)
-                """;
-        KeyHolder keyHolder = new GeneratedKeyHolder();
-        jdbcTemplate.update(connection -> {
-            var stmt = connection.prepareStatement(sql, new String[]{"id"});
-            stmt.setLong(1, rule.getFlagId());
-            stmt.setInt(2, rule.getPriority());
-            stmt.setString(3, rule.getConditionJson());
-            stmt.setInt(4, rule.getRolloutPercentage());
-            stmt.setString(5, rule.getVariationValue());
-            stmt.setBoolean(6, rule.isEnabled());
-            stmt.setTimestamp(7, Timestamp.from(rule.getCreatedAt()));
-            stmt.setTimestamp(8, Timestamp.from(rule.getUpdatedAt()));
-            return stmt;
-        }, keyHolder);
-        if (keyHolder.getKey() != null) {
-            rule.setId(keyHolder.getKey().longValue());
-        }
+        var params = new java.util.HashMap<String, Object>();
+        params.put("flag_id", rule.getFlagId());
+        params.put("priority", rule.getPriority());
+        params.put("condition_json", rule.getConditionJson());
+        params.put("rollout_percentage", rule.getRolloutPercentage());
+        params.put("variation_value", rule.getVariationValue());
+        params.put("enabled", rule.isEnabled());
+        params.put("created_at", Timestamp.from(rule.getCreatedAt()));
+        params.put("updated_at", Timestamp.from(rule.getUpdatedAt()));
+
+        Number key = insertActor.executeAndReturnKey(params);
+        rule.setId(key.longValue());
         return rule;
     }
 

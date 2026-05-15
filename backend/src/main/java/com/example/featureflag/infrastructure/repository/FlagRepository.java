@@ -5,16 +5,19 @@ import java.sql.Timestamp;
 import java.util.List;
 import java.util.Optional;
 import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.jdbc.support.GeneratedKeyHolder;
-import org.springframework.jdbc.support.KeyHolder;
+import org.springframework.jdbc.core.simple.SimpleJdbcInsert;
 import org.springframework.stereotype.Repository;
 
 @Repository
 public class FlagRepository {
     private final JdbcTemplate jdbcTemplate;
+    private final SimpleJdbcInsert insertActor;
 
     public FlagRepository(JdbcTemplate jdbcTemplate) {
         this.jdbcTemplate = jdbcTemplate;
+        this.insertActor = new SimpleJdbcInsert(jdbcTemplate)
+                .withTableName("ff_flag")
+                .usingGeneratedKeyColumns("id");
     }
 
     public List<FlagEntity> findByAppKeyAndEnvironmentOrderByFlagKeyAsc(String appKey, String environment) {
@@ -33,47 +36,35 @@ public class FlagRepository {
     }
 
     private FlagEntity insert(FlagEntity flag) {
-        String sql = """
-                insert into ff_flag(flag_key, app_key, environment, name, description, type, default_value, enabled, release_key, status, created_at, updated_at)
-                values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                """;
-        KeyHolder keyHolder = new GeneratedKeyHolder();
-        jdbcTemplate.update(connection -> {
-            var stmt = connection.prepareStatement(sql, new String[]{"id"});
-            bindFlag(stmt, flag);
-            return stmt;
-        }, keyHolder);
-        if (keyHolder.getKey() != null) {
-            flag.setId(keyHolder.getKey().longValue());
-        }
+        var params = new java.util.HashMap<String, Object>();
+        params.put("flag_key", flag.getFlagKey());
+        params.put("app_key", flag.getAppKey());
+        params.put("environment", flag.getEnvironment());
+        params.put("name", flag.getName());
+        params.put("description", flag.getDescription());
+        params.put("type", flag.getType());
+        params.put("default_value", flag.getDefaultValue());
+        params.put("enabled", flag.isEnabled());
+        params.put("release_key", flag.getReleaseKey());
+        params.put("status", flag.getStatus());
+        params.put("created_at", Timestamp.from(flag.getCreatedAt()));
+        params.put("updated_at", Timestamp.from(flag.getUpdatedAt()));
+
+        Number key = insertActor.executeAndReturnKey(params);
+        flag.setId(key.longValue());
         return flag;
     }
 
     private FlagEntity update(FlagEntity flag) {
         String sql = """
-                update ff_flag set flag_key = ?, app_key = ?, environment = ?, name = ?, description = ?, type = ?, default_value = ?,
-                  enabled = ?, release_key = ?, status = ?, created_at = ?, updated_at = ? where id = ?
+                update ff_flag set flag_key = ?, app_key = ?, environment = ?, name = ?, description = ?, type = ?,
+                  default_value = ?, enabled = ?, release_key = ?, status = ?, created_at = ?, updated_at = ? where id = ?
                 """;
         jdbcTemplate.update(sql, flag.getFlagKey(), flag.getAppKey(), flag.getEnvironment(), flag.getName(),
                 flag.getDescription(), flag.getType(), flag.getDefaultValue(), flag.isEnabled(),
                 flag.getReleaseKey(), flag.getStatus(), Timestamp.from(flag.getCreatedAt()),
                 Timestamp.from(flag.getUpdatedAt()), flag.getId());
         return flag;
-    }
-
-    private void bindFlag(java.sql.PreparedStatement statement, FlagEntity flag) throws java.sql.SQLException {
-        statement.setString(1, flag.getFlagKey());
-        statement.setString(2, flag.getAppKey());
-        statement.setString(3, flag.getEnvironment());
-        statement.setString(4, flag.getName());
-        statement.setString(5, flag.getDescription());
-        statement.setString(6, flag.getType());
-        statement.setString(7, flag.getDefaultValue());
-        statement.setBoolean(8, flag.isEnabled());
-        statement.setString(9, flag.getReleaseKey());
-        statement.setString(10, flag.getStatus());
-        statement.setTimestamp(11, Timestamp.from(flag.getCreatedAt()));
-        statement.setTimestamp(12, Timestamp.from(flag.getUpdatedAt()));
     }
 
     private FlagEntity mapRow(java.sql.ResultSet rs, int rowNum) throws java.sql.SQLException {

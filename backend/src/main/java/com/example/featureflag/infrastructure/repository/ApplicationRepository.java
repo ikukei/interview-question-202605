@@ -5,16 +5,19 @@ import java.sql.Timestamp;
 import java.util.List;
 import java.util.Optional;
 import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.jdbc.support.GeneratedKeyHolder;
-import org.springframework.jdbc.support.KeyHolder;
+import org.springframework.jdbc.core.simple.SimpleJdbcInsert;
 import org.springframework.stereotype.Repository;
 
 @Repository
 public class ApplicationRepository {
     private final JdbcTemplate jdbcTemplate;
+    private final SimpleJdbcInsert insertActor;
 
     public ApplicationRepository(JdbcTemplate jdbcTemplate) {
         this.jdbcTemplate = jdbcTemplate;
+        this.insertActor = new SimpleJdbcInsert(jdbcTemplate)
+                .withTableName("ff_application")
+                .usingGeneratedKeyColumns("id");
     }
 
     public Optional<ApplicationEntity> findByAppKey(String appKey) {
@@ -36,20 +39,15 @@ public class ApplicationRepository {
     }
 
     private ApplicationEntity insert(ApplicationEntity app) {
-        String sql = "insert into ff_application(app_key, name, owner, created_at, updated_at) values (?, ?, ?, ?, ?)";
-        KeyHolder keyHolder = new GeneratedKeyHolder();
-        jdbcTemplate.update(connection -> {
-            var stmt = connection.prepareStatement(sql, new String[]{"id"});
-            stmt.setString(1, app.getAppKey());
-            stmt.setString(2, app.getName());
-            stmt.setString(3, app.getOwner());
-            stmt.setTimestamp(4, Timestamp.from(app.getCreatedAt()));
-            stmt.setTimestamp(5, Timestamp.from(app.getUpdatedAt()));
-            return stmt;
-        }, keyHolder);
-        if (keyHolder.getKey() != null) {
-            app.setId(keyHolder.getKey().longValue());
-        }
+        var params = new java.util.HashMap<String, Object>();
+        params.put("app_key", app.getAppKey());
+        params.put("name", app.getName());
+        params.put("owner", app.getOwner());
+        params.put("created_at", Timestamp.from(app.getCreatedAt()));
+        params.put("updated_at", Timestamp.from(app.getUpdatedAt()));
+
+        Number key = insertActor.executeAndReturnKey(params);
+        app.setId(key.longValue());
         return app;
     }
 

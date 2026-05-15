@@ -5,16 +5,19 @@ import java.sql.Timestamp;
 import java.util.List;
 import java.util.Optional;
 import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.jdbc.support.GeneratedKeyHolder;
-import org.springframework.jdbc.support.KeyHolder;
+import org.springframework.jdbc.core.simple.SimpleJdbcInsert;
 import org.springframework.stereotype.Repository;
 
 @Repository
 public class ConfigSnapshotRepository {
     private final JdbcTemplate jdbcTemplate;
+    private final SimpleJdbcInsert insertActor;
 
     public ConfigSnapshotRepository(JdbcTemplate jdbcTemplate) {
         this.jdbcTemplate = jdbcTemplate;
+        this.insertActor = new SimpleJdbcInsert(jdbcTemplate)
+                .withTableName("ff_config_snapshot")
+                .usingGeneratedKeyColumns("id");
     }
 
     public Optional<ConfigSnapshotEntity> findTopByAppKeyAndEnvironmentOrderByVersionDesc(String appKey, String environment) {
@@ -30,25 +33,17 @@ public class ConfigSnapshotRepository {
     }
 
     public ConfigSnapshotEntity save(ConfigSnapshotEntity entity) {
-        String sql = """
-                insert into ff_config_snapshot(app_key, environment, version, checksum, snapshot_json, published_by, published_at)
-                values (?, ?, ?, ?, ?, ?, ?)
-                """;
-        KeyHolder keyHolder = new GeneratedKeyHolder();
-        jdbcTemplate.update(connection -> {
-            var stmt = connection.prepareStatement(sql, new String[]{"id"});
-            stmt.setString(1, entity.getAppKey());
-            stmt.setString(2, entity.getEnvironment());
-            stmt.setLong(3, entity.getVersion());
-            stmt.setString(4, entity.getChecksum());
-            stmt.setString(5, entity.getSnapshotJson());
-            stmt.setString(6, entity.getPublishedBy());
-            stmt.setTimestamp(7, Timestamp.from(entity.getPublishedAt()));
-            return stmt;
-        }, keyHolder);
-        if (keyHolder.getKey() != null) {
-            entity.setId(keyHolder.getKey().longValue());
-        }
+        var params = new java.util.HashMap<String, Object>();
+        params.put("app_key", entity.getAppKey());
+        params.put("environment", entity.getEnvironment());
+        params.put("version", entity.getVersion());
+        params.put("checksum", entity.getChecksum());
+        params.put("snapshot_json", entity.getSnapshotJson());
+        params.put("published_by", entity.getPublishedBy());
+        params.put("published_at", Timestamp.from(entity.getPublishedAt()));
+
+        Number key = insertActor.executeAndReturnKey(params);
+        entity.setId(key.longValue());
         return entity;
     }
 
