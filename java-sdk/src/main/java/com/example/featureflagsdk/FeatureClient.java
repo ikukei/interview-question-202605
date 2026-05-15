@@ -6,6 +6,7 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.time.Duration;
+import java.util.List;
 import java.util.Map;
 
 public class FeatureClient {
@@ -56,6 +57,58 @@ public class FeatureClient {
             return objectMapper.readValue(response.body(), FeatureEvaluation.class);
         } catch (Exception ex) {
             throw new FeatureClientException("Unable to evaluate feature flag " + flagKey, ex);
+        }
+    }
+
+    public List<String> listFlagKeys() {
+        try {
+            HttpRequest request = HttpRequest.newBuilder()
+                    .uri(URI.create(baseUrl + "/api/v1/flags?appKey=" + appKey + "&environment=" + environment))
+                    .timeout(Duration.ofSeconds(5))
+                    .GET()
+                    .build();
+            HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+            if (response.statusCode() < 200 || response.statusCode() >= 300) {
+                throw new FeatureClientException("List flags failed with HTTP " + response.statusCode() + ": " + response.body());
+            }
+            var flags = objectMapper.readTree(response.body());
+            return flags.findValuesAsText("flagKey");
+        } catch (Exception ex) {
+            throw new FeatureClientException("Unable to list feature flags", ex);
+        }
+    }
+
+    public List<FeatureEvaluation> evaluateAll(FeatureContext context, String defaultValue) {
+        try {
+            List<String> flagKeys = listFlagKeys();
+            if (flagKeys.isEmpty()) {
+                return List.of();
+            }
+            Map<String, Object> body = Map.of(
+                    "appKey", appKey,
+                    "environment", environment,
+                    "flagKeys", flagKeys,
+                    "context", Map.of(
+                            "subjectKey", context.subjectKey(),
+                            "attributes", context.attributes()
+                    ),
+                    "defaultValue", defaultValue
+            );
+            String json = objectMapper.writeValueAsString(body);
+            HttpRequest request = HttpRequest.newBuilder()
+                    .uri(URI.create(baseUrl + "/api/v1/evaluations:batch"))
+                    .timeout(Duration.ofSeconds(5))
+                    .header("Content-Type", "application/json")
+                    .POST(HttpRequest.BodyPublishers.ofString(json))
+                    .build();
+            HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+            if (response.statusCode() < 200 || response.statusCode() >= 300) {
+                throw new FeatureClientException("Batch evaluation failed with HTTP " + response.statusCode() + ": " + response.body());
+            }
+            return objectMapper.readValue(response.body(), 
+                    objectMapper.getTypeFactory().constructCollectionType(List.class, FeatureEvaluation.class));
+        } catch (Exception ex) {
+            throw new FeatureClientException("Unable to evaluate all feature flags", ex);
         }
     }
 
