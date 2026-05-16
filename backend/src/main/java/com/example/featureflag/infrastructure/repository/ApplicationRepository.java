@@ -5,8 +5,6 @@ import java.sql.Timestamp;
 import java.util.List;
 import java.util.Optional;
 import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.jdbc.support.GeneratedKeyHolder;
-import org.springframework.jdbc.support.KeyHolder;
 import org.springframework.stereotype.Repository;
 
 @Repository
@@ -36,20 +34,10 @@ public class ApplicationRepository {
     }
 
     private ApplicationEntity insert(ApplicationEntity app) {
-        String sql = "insert into ff_application(app_key, name, owner, created_at, updated_at) values (?, ?, ?, ?, ?)";
-        KeyHolder keyHolder = new GeneratedKeyHolder();
-        jdbcTemplate.update(connection -> {
-            var stmt = connection.prepareStatement(sql, new String[]{"id"});
-            stmt.setString(1, app.getAppKey());
-            stmt.setString(2, app.getName());
-            stmt.setString(3, app.getOwner());
-            stmt.setTimestamp(4, Timestamp.from(app.getCreatedAt()));
-            stmt.setTimestamp(5, Timestamp.from(app.getUpdatedAt()));
-            return stmt;
-        }, keyHolder);
-        if (keyHolder.getKey() != null) {
-            app.setId(keyHolder.getKey().longValue());
-        }
+        long nextId = jdbcTemplate.queryForObject("select ff_application_seq.nextval from dual", Long.class);
+        String sql = "insert into ff_application(id, app_key, name, owner, created_at, updated_at) values (?, ?, ?, ?, ?, ?)";
+        jdbcTemplate.update(sql, nextId, app.getAppKey(), app.getName(), app.getOwner(), Timestamp.from(app.getCreatedAt()), Timestamp.from(app.getUpdatedAt()));
+        app.setId(nextId);
         return app;
     }
 

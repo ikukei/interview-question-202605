@@ -5,8 +5,6 @@ import java.sql.Timestamp;
 import java.util.List;
 import java.util.Optional;
 import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.jdbc.support.GeneratedKeyHolder;
-import org.springframework.jdbc.support.KeyHolder;
 import org.springframework.stereotype.Repository;
 
 @Repository
@@ -30,25 +28,15 @@ public class ConfigSnapshotRepository {
     }
 
     public ConfigSnapshotEntity save(ConfigSnapshotEntity entity) {
+        long nextId = jdbcTemplate.queryForObject("select ff_config_snapshot_seq.nextval from dual", Long.class);
         String sql = """
-                insert into ff_config_snapshot(app_key, environment, version, checksum, snapshot_json, published_by, published_at)
-                values (?, ?, ?, ?, ?, ?, ?)
+                insert into ff_config_snapshot(id, app_key, environment, version, checksum, snapshot_json, published_by, published_at)
+                values (?, ?, ?, ?, ?, ?, ?, ?)
                 """;
-        KeyHolder keyHolder = new GeneratedKeyHolder();
-        jdbcTemplate.update(connection -> {
-            var stmt = connection.prepareStatement(sql, new String[]{"id"});
-            stmt.setString(1, entity.getAppKey());
-            stmt.setString(2, entity.getEnvironment());
-            stmt.setLong(3, entity.getVersion());
-            stmt.setString(4, entity.getChecksum());
-            stmt.setString(5, entity.getSnapshotJson());
-            stmt.setString(6, entity.getPublishedBy());
-            stmt.setTimestamp(7, Timestamp.from(entity.getPublishedAt()));
-            return stmt;
-        }, keyHolder);
-        if (keyHolder.getKey() != null) {
-            entity.setId(keyHolder.getKey().longValue());
-        }
+        jdbcTemplate.update(sql, nextId, entity.getAppKey(), entity.getEnvironment(),
+                entity.getVersion(), entity.getChecksum(), entity.getSnapshotJson(),
+                entity.getPublishedBy(), Timestamp.from(entity.getPublishedAt()));
+        entity.setId(nextId);
         return entity;
     }
 
