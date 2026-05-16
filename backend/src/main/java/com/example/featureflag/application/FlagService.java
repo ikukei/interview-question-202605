@@ -87,8 +87,8 @@ public class FlagService {
                 .toList();
     }
 
-    public FlagResponse updateFlag(String flagKey, String appKey, String environment, UpdateFlagRequest request) {
-        FlagEntity flag = findFlag(flagKey, appKey, environment);
+    public FlagResponse updateFlag(String flagKey, UpdateFlagRequest request) {
+        FlagEntity flag = findFlag(flagKey, request.appKey(), request.environment());
         if (request.name() != null) {
             flag.setName(request.name());
         }
