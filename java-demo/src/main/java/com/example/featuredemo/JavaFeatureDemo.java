@@ -43,9 +43,14 @@ public class JavaFeatureDemo {
                 for (String flagKey : currentFlags) {
                     if (!knownFlags.contains(flagKey)) {
                         System.out.println("\n[" + LocalDateTime.now().format(FORMATTER) + "] NEW FLAG DETECTED: " + flagKey);
-                        FeatureEvaluation evaluation = client.evaluate(flagKey, context, "false");
-                        printEvaluation(evaluation);
-                        knownFlags.add(flagKey);
+                        try {
+                            FeatureEvaluation evaluation = client.evaluate(flagKey, context, "false");
+                            printEvaluation(evaluation);
+                        } catch (Exception e) {
+                            System.err.println("  Evaluation failed: " + e.getMessage());
+                        } finally {
+                            knownFlags.add(flagKey);
+                        }
                     }
                 }
 
