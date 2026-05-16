@@ -5,19 +5,14 @@ import java.sql.Timestamp;
 import java.util.List;
 import java.util.Optional;
 import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.jdbc.core.simple.SimpleJdbcInsert;
 import org.springframework.stereotype.Repository;
 
 @Repository
 public class FlagRepository {
     private final JdbcTemplate jdbcTemplate;
-    private final SimpleJdbcInsert insertActor;
 
     public FlagRepository(JdbcTemplate jdbcTemplate) {
         this.jdbcTemplate = jdbcTemplate;
-        this.insertActor = new SimpleJdbcInsert(jdbcTemplate)
-                .withTableName("ff_flag")
-                .usingGeneratedKeyColumns("id");
     }
 
     public List<FlagEntity> findByAppKeyAndEnvironmentOrderByFlagKeyAsc(String appKey, String environment) {
@@ -36,32 +31,26 @@ public class FlagRepository {
     }
 
     private FlagEntity insert(FlagEntity flag) {
-        var params = new java.util.HashMap<String, Object>();
-        params.put("flag_key", flag.getFlagKey());
-        params.put("app_key", flag.getAppKey());
-        params.put("environment", flag.getEnvironment());
-        params.put("name", flag.getName());
-        params.put("description", flag.getDescription());
-        params.put("type", flag.getType());
-        params.put("default_value", flag.getDefaultValue());
-        params.put("enabled", flag.isEnabled());
-        params.put("release_key", flag.getReleaseKey());
-        params.put("status", flag.getStatus());
-        params.put("created_at", Timestamp.from(flag.getCreatedAt()));
-        params.put("updated_at", Timestamp.from(flag.getUpdatedAt()));
-
-        Number key = insertActor.executeAndReturnKey(params);
-        flag.setId(key.longValue());
+        long nextId = jdbcTemplate.queryForObject("select ff_flag_seq.nextval from dual", Long.class);
+        String sql = """
+                insert into ff_flag(id, flag_key, app_key, environment, name, description, type, default_value, enabled, release_key, status, created_at, updated_at)
+                values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """;
+        jdbcTemplate.update(sql, nextId, flag.getFlagKey(), flag.getAppKey(), flag.getEnvironment(),
+                flag.getName(), flag.getDescription(), flag.getType(), flag.getDefaultValue(),
+                flag.isEnabled() ? 1 : 0, flag.getReleaseKey(), flag.getStatus(),
+                Timestamp.from(flag.getCreatedAt()), Timestamp.from(flag.getUpdatedAt()));
+        flag.setId(nextId);
         return flag;
     }
 
     private FlagEntity update(FlagEntity flag) {
         String sql = """
-                update ff_flag set flag_key = ?, app_key = ?, environment = ?, name = ?, description = ?, type = ?,
-                  default_value = ?, enabled = ?, release_key = ?, status = ?, created_at = ?, updated_at = ? where id = ?
+                update ff_flag set flag_key = ?, app_key = ?, environment = ?, name = ?, description = ?, type = ?, default_value = ?,
+                  enabled = ?, release_key = ?, status = ?, created_at = ?, updated_at = ? where id = ?
                 """;
         jdbcTemplate.update(sql, flag.getFlagKey(), flag.getAppKey(), flag.getEnvironment(), flag.getName(),
-                flag.getDescription(), flag.getType(), flag.getDefaultValue(), flag.isEnabled(),
+                flag.getDescription(), flag.getType(), flag.getDefaultValue(), flag.isEnabled() ? 1 : 0,
                 flag.getReleaseKey(), flag.getStatus(), Timestamp.from(flag.getCreatedAt()),
                 Timestamp.from(flag.getUpdatedAt()), flag.getId());
         return flag;
@@ -77,7 +66,7 @@ public class FlagRepository {
         flag.setDescription(rs.getString("description"));
         flag.setType(rs.getString("type"));
         flag.setDefaultValue(rs.getString("default_value"));
-        flag.setEnabled(rs.getBoolean("enabled"));
+        flag.setEnabled(rs.getInt("enabled") == 1);
         flag.setReleaseKey(rs.getString("release_key"));
         flag.setStatus(rs.getString("status"));
         return flag;

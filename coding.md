@@ -120,6 +120,121 @@ Implement the feature management take-home project in subdirectories:
 - Added Maven compiler `-parameters` support after local API test found Spring MVC parameter-name binding issue.
 - Added CORS origins for `http://127.0.0.1:5173` and `http://127.0.0.1:5174` after browser showed `TypeError: Failed to fetch`.
 
+## Simplification Plan (2026-05-16)
+
+### Background
+
+After reviewing against `Align_Expert_Software_Engineer_R2_Quiz.md`, the quiz requires
+the explainability model to answer exactly four questions for any evaluated flag:
+
+1. is it enabled?
+2. For whom?
+3. In which region?
+4. Associated with which release?
+
+The current implementation built a generic rule engine (`ff_rule` table, `conditionJson`,
+four operators, priority ordering, per-rule `enabled`) that goes well beyond what the quiz
+requires. The goal of this plan is to remove the over-engineering so the demo is focused,
+readable, and directly maps to the quiz requirements.
+
+### Design Decision: replace the rule engine with flat flag fields
+
+Instead of a separate rule table with generic conditions, move the targeting dimensions
+directly onto the flag:
+
+| Field | Quiz question answered |
+|---|---|
+| `enabled` | is it enabled? |
+| `targetUserId` | For whom? (exact user match) |
+| `targetRegion` | In which region? |
+| `releaseKey` | Associated with which release? |
+
+Evaluation logic becomes a simple sequence of checks — no rule engine, no JSON parsing,
+no priority loop:
+
+```
+if !flag.enabled          → FLAG_DISABLED
+if targetRegion set
+   && context.region != targetRegion  → NO_REGION_MATCH
+if targetUserId set
+   && context.userId != targetUserId  → NO_USER_MATCH
+→ MATCH, return flag value
+```
+
+### What gets removed
+
+- `ff_rule` table and `RuleEntity`
+- `RuleRepository`
+- `conditionJson` and all operator logic (`equals`, `notEquals`, `contains`, `in`)
+- `rolloutPercentage` and rollout bucket hashing (not required by quiz)
+- `SnapshotRule` and `SnapshotCondition` model classes
+- `AddRuleRequest` and `RuleResponse` DTOs
+- `FlagController.addRule` endpoint
+- `EvaluationEngine` class (logic moves inline into `EvaluationService`)
+- `EvaluationEngineTest` (replaced by simpler tests on `EvaluationService`)
+
+### What gets added to `ff_flag`
+
+Two new columns:
+
+```sql
+target_user_id  VARCHAR  -- nullable, exact match on context.userId
+target_region   VARCHAR  -- nullable, exact match on context.region
+```
+
+### Evaluation result reason codes
+
+| Code | Meaning |
+|---|---|
+| `FLAG_DISABLED` | flag.enabled is false |
+| `NO_REGION_MATCH` | targetRegion set but context.region does not match |
+| `NO_USER_MATCH` | targetUserId set but context.userId does not match |
+| `MATCH` | all conditions passed, flag value returned |
+| `FLAG_NOT_FOUND` | flag does not exist in snapshot |
+
+### Explainability response after simplification
+
+```json
+{
+  "flagKey": "new-checkout",
+  "enabled": true,
+  "value": "true",
+  "reasonCode": "MATCH",
+  "targetRegion": "us-east",
+  "targetUserId": null,
+  "releaseKey": "release-2026-05-checkout",
+  "snapshotVersion": 3,
+  "evaluatedAt": "2026-05-16T10:00:00Z"
+}
+```
+
+Every field maps directly to one of the four quiz questions.
+
+### web-admin UI after simplification
+
+Flag form adds two optional fields:
+
+```
+Target Region  [ us-east        ]   (leave blank = match all regions)
+Target User ID [ user-123       ]   (leave blank = match all users)
+```
+
+No separate rule section, no condition rows, no operator dropdown.
+The full demo flow becomes: create flag → set targetRegion → publish → evaluate → see explain.
+
+### Implementation steps
+
+1. Add `target_user_id` and `target_region` columns to `ff_flag` in `SchemaInitializer`.
+2. Add fields to `FlagEntity`, `CreateFlagRequest`, `UpdateFlagRequest`, `FlagResponse`.
+3. Add fields to `SnapshotFlag` model.
+4. Rewrite evaluation logic in `EvaluationService` (remove `EvaluationEngine`).
+5. Update `PublishService.toSnapshotFlag` to include new fields.
+6. Update `ExplainResponse` / `EvaluationResponse` DTOs.
+7. Remove `ff_rule` table, `RuleEntity`, `RuleRepository`, rule-related DTOs and endpoints.
+8. Update `DemoDataInitializer` seed data (remove `addRule` call, set `targetRegion=us-east`).
+9. Replace `EvaluationEngineTest` with tests covering the four reason codes.
+10. Update `web-admin` flag form to show `targetRegion` and `targetUserId` fields.
+
 ## Remaining Work
 
 1. Run `mvn test` from repository root.

@@ -10,9 +10,9 @@ import com.example.featureflag.api.dto.Dtos.UpdateFlagRequest;
 import com.example.featureflag.application.FlagService;
 import java.util.List;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -47,14 +47,12 @@ public class FlagController {
         return flagService.listFlags(appKey, environment);
     }
 
-    @PatchMapping("/flags/{flagKey}")
+    @PutMapping("/flags/{flagKey}")
     public FlagResponse updateFlag(
             @PathVariable String flagKey,
-            @RequestParam String appKey,
-            @RequestParam String environment,
             @RequestBody UpdateFlagRequest request
     ) {
-        return flagService.updateFlag(flagKey, appKey, environment, request);
+        return flagService.updateFlag(flagKey, request);
     }
 
     @PostMapping("/flags/{flagKey}/rules")

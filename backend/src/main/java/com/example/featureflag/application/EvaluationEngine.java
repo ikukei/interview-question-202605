@@ -75,7 +75,14 @@ public class EvaluationEngine {
     }
 
     public int rolloutBucket(String flagKey, String subjectKey) {
-        return Math.floorMod((flagKey + ":" + subjectKey).hashCode(), 100);
+        try {
+            MessageDigest digest = MessageDigest.getInstance("SHA-256");
+            byte[] hash = digest.digest((flagKey + ":" + subjectKey).getBytes(StandardCharsets.UTF_8));
+            int value = ((hash[0] & 0xFF) << 24) | ((hash[1] & 0xFF) << 16) | ((hash[2] & 0xFF) << 8) | (hash[3] & 0xFF);
+            return Math.floorMod(value, 100);
+        } catch (Exception ex) {
+            throw new IllegalStateException("Unable to compute rollout bucket", ex);
+        }
     }
 
     private static String sha256(String value) {

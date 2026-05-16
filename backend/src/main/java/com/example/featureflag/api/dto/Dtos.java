@@ -32,6 +32,8 @@ public final class Dtos {
     }
 
     public record UpdateFlagRequest(
+            String appKey,
+            String environment,
             String name,
             String description,
             String defaultValue,

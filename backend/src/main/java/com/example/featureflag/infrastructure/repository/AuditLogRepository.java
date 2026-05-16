@@ -14,13 +14,15 @@ public class AuditLogRepository {
     }
 
     public AuditLogEntity save(AuditLogEntity log) {
+        long nextId = jdbcTemplate.queryForObject("select ff_audit_log_seq.nextval from dual", Long.class);
         String sql = """
-                insert into ff_audit_log(actor, action, resource_type, resource_key, before_json, after_json, created_at)
-                values (?, ?, ?, ?, ?, ?, ?)
+                insert into ff_audit_log(id, actor, action, resource_type, resource_key, before_json, after_json, created_at)
+                values (?, ?, ?, ?, ?, ?, ?, ?)
                 """;
-        jdbcTemplate.update(sql, log.getActor(), log.getAction(), log.getResourceType(), 
+        jdbcTemplate.update(sql, nextId, log.getActor(), log.getAction(), log.getResourceType(), 
                 log.getResourceKey(), log.getBeforeJson(), log.getAfterJson(), 
                 Timestamp.from(log.getCreatedAt()));
+        log.setId(nextId);
         return log;
     }
 }

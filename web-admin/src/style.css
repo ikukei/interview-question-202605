@@ -10,7 +10,8 @@ body {
 }
 
 button,
-input {
+input,
+select {
   font: inherit;
 }
 
@@ -30,6 +31,15 @@ button:hover {
 button:disabled {
   opacity: 0.55;
   cursor: not-allowed;
+}
+
+select {
+  border: 1px solid #cdd5df;
+  border-radius: 6px;
+  padding: 6px 10px;
+  color: #1d2433;
+  background: white;
+  cursor: pointer;
 }
 
 .shell {
@@ -116,6 +126,87 @@ input {
   gap: 8px;
   margin-top: 14px;
   color: #536174;
+}
+
+.flag-controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  padding: 12px;
+  background: #f8fafc;
+  border-radius: 6px;
+}
+
+.control-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.control-group .label {
+  font-size: 13px;
+  color: #647083;
+}
+
+.control-group button {
+  min-width: 60px;
+  padding: 6px 12px;
+  font-weight: 600;
+  font-size: 13px;
+}
+
+.control-group button.active {
+  background: #10b981;
+  border-color: #10b981;
+  color: white;
+}
+
+.control-group button:not(.active) {
+  background: #f3f4f6;
+  border-color: #d1d5db;
+  color: #374151;
+}
+
+.create-controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.control-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.control-row .label {
+  font-size: 13px;
+  color: #647083;
+}
+
+.control-row select {
+  min-width: 80px;
+}
+
+.selected-flag {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+  padding: 8px 12px;
+  background: #f8fafc;
+  border-radius: 6px;
+}
+
+.selected-flag .label {
+  font-size: 13px;
+  color: #647083;
+}
+
+.selected-flag .value {
+  font-weight: 600;
+  color: #206b82;
 }
 
 .playground,

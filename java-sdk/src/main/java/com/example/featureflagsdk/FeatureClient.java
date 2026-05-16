@@ -40,7 +40,10 @@ public class FeatureClient {
             Map<String, Object> body = Map.of(
                     "appKey", appKey,
                     "environment", environment,
-                    "context", context,
+                    "context", Map.of(
+                            "subjectKey", context.subjectKey(),
+                            "attributes", context.attributes()
+                    ),
                     "defaultValue", defaultValue
             );
             String json = objectMapper.writeValueAsString(body);

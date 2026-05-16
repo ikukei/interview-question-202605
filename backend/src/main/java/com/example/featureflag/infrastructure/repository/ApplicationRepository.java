@@ -5,19 +5,14 @@ import java.sql.Timestamp;
 import java.util.List;
 import java.util.Optional;
 import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.jdbc.core.simple.SimpleJdbcInsert;
 import org.springframework.stereotype.Repository;
 
 @Repository
 public class ApplicationRepository {
     private final JdbcTemplate jdbcTemplate;
-    private final SimpleJdbcInsert insertActor;
 
     public ApplicationRepository(JdbcTemplate jdbcTemplate) {
         this.jdbcTemplate = jdbcTemplate;
-        this.insertActor = new SimpleJdbcInsert(jdbcTemplate)
-                .withTableName("ff_application")
-                .usingGeneratedKeyColumns("id");
     }
 
     public Optional<ApplicationEntity> findByAppKey(String appKey) {
@@ -39,15 +34,10 @@ public class ApplicationRepository {
     }
 
     private ApplicationEntity insert(ApplicationEntity app) {
-        var params = new java.util.HashMap<String, Object>();
-        params.put("app_key", app.getAppKey());
-        params.put("name", app.getName());
-        params.put("owner", app.getOwner());
-        params.put("created_at", Timestamp.from(app.getCreatedAt()));
-        params.put("updated_at", Timestamp.from(app.getUpdatedAt()));
-
-        Number key = insertActor.executeAndReturnKey(params);
-        app.setId(key.longValue());
+        long nextId = jdbcTemplate.queryForObject("select ff_application_seq.nextval from dual", Long.class);
+        String sql = "insert into ff_application(id, app_key, name, owner, created_at, updated_at) values (?, ?, ?, ?, ?, ?)";
+        jdbcTemplate.update(sql, nextId, app.getAppKey(), app.getName(), app.getOwner(), Timestamp.from(app.getCreatedAt()), Timestamp.from(app.getUpdatedAt()));
+        app.setId(nextId);
         return app;
     }
 

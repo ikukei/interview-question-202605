@@ -4,19 +4,14 @@ import com.example.featureflag.domain.RuleEntity;
 import java.sql.Timestamp;
 import java.util.List;
 import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.jdbc.core.simple.SimpleJdbcInsert;
 import org.springframework.stereotype.Repository;
 
 @Repository
 public class RuleRepository {
     private final JdbcTemplate jdbcTemplate;
-    private final SimpleJdbcInsert insertActor;
 
     public RuleRepository(JdbcTemplate jdbcTemplate) {
         this.jdbcTemplate = jdbcTemplate;
-        this.insertActor = new SimpleJdbcInsert(jdbcTemplate)
-                .withTableName("ff_rule")
-                .usingGeneratedKeyColumns("id");
     }
 
     public List<RuleEntity> findByFlagIdOrderByPriorityAsc(Long flagId) {
@@ -25,18 +20,15 @@ public class RuleRepository {
     }
 
     public RuleEntity save(RuleEntity rule) {
-        var params = new java.util.HashMap<String, Object>();
-        params.put("flag_id", rule.getFlagId());
-        params.put("priority", rule.getPriority());
-        params.put("condition_json", rule.getConditionJson());
-        params.put("rollout_percentage", rule.getRolloutPercentage());
-        params.put("variation_value", rule.getVariationValue());
-        params.put("enabled", rule.isEnabled());
-        params.put("created_at", Timestamp.from(rule.getCreatedAt()));
-        params.put("updated_at", Timestamp.from(rule.getUpdatedAt()));
-
-        Number key = insertActor.executeAndReturnKey(params);
-        rule.setId(key.longValue());
+        long nextId = jdbcTemplate.queryForObject("select ff_rule_seq.nextval from dual", Long.class);
+        String sql = """
+                insert into ff_rule(id, flag_id, priority, condition_json, rollout_percentage, variation_value, enabled, created_at, updated_at)
+                values (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """;
+        jdbcTemplate.update(sql, nextId, rule.getFlagId(), rule.getPriority(),
+                rule.getConditionJson(), rule.getRolloutPercentage(), rule.getVariationValue(),
+                rule.isEnabled() ? 1 : 0, Timestamp.from(rule.getCreatedAt()), Timestamp.from(rule.getUpdatedAt()));
+        rule.setId(nextId);
         return rule;
     }
 
@@ -48,7 +40,7 @@ public class RuleRepository {
         rule.setConditionJson(rs.getString("condition_json"));
         rule.setRolloutPercentage(rs.getInt("rollout_percentage"));
         rule.setVariationValue(rs.getString("variation_value"));
-        rule.setEnabled(rs.getBoolean("enabled"));
+        rule.setEnabled(rs.getInt("enabled") == 1);
         return rule;
     }
 }
