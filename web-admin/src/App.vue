@@ -477,7 +477,15 @@ onMounted(load);
     <!-- evaluation -->
     <section class="panel eval-panel">
       <h2>Evaluation Playground</h2>
+
+      <!-- Row 1: Flag / App / Environment / Region / Subject / User Name -->
       <div class="eval-grid">
+        <label>Flag
+          <select v-model="evalFlagKey">
+            <option value="" disabled>— select —</option>
+            <option v-for="flag in flagDefinitions" :key="flag.flagKey" :value="flag.flagKey">{{ flag.flagKey }}</option>
+          </select>
+        </label>
         <label>App
           <select v-model="evalApp">
             <option v-for="app in appOptions" :key="app" :value="app">{{ app }}</option>
@@ -488,12 +496,6 @@ onMounted(load);
             <option v-for="e in environmentOptions" :key="e" :value="e">{{ e }}</option>
           </select>
         </label>
-        <label>Flag
-          <select v-model="evalFlagKey">
-            <option v-for="flag in flagDefinitions" :key="flag.flagKey" :value="flag.flagKey">{{ flag.flagKey }}</option>
-          </select>
-        </label>
-        <label>Subject key<input v-model="evalSubjectKey" /></label>
         <label>Region
           <select v-model="evalRegion">
             <option v-for="r in regionOptions" :key="r" :value="r">{{ r }}</option>
@@ -504,14 +506,26 @@ onMounted(load);
             <option v-for="s in subjectOptions" :key="s" :value="s">{{ s }}</option>
           </select>
         </label>
+        <label>User Name<input v-model="evalSubjectKey" placeholder="e.g. demo-user-001" /></label>
       </div>
-      <button class="primary" :disabled="busy || !evalFlagKey" @click="runEvaluation">Evaluate</button>
 
-      <div v-if="evaluation" class="eval-result">
-        <div class="value-badge" :class="{ on: evaluation.enabled }">{{ evaluation.enabled ? 'enabled' : 'disabled' }}</div>
-        <pre>{{ JSON.stringify(explain, null, 2) }}</pre>
+      <!-- Row 2: Evaluate button -->
+      <div class="eval-action">
+        <button class="primary" :disabled="busy || !evalFlagKey" @click="runEvaluation">Evaluate</button>
       </div>
-      <p v-else class="empty">Publish a snapshot, then run an evaluation.</p>
+
+      <!-- Row 3: result badge -->
+      <div v-if="evaluation" class="eval-badge-row">
+        <div class="value-badge" :class="{ on: evaluation.enabled }">
+          {{ evaluation.enabled ? 'enabled' : 'disabled' }}
+        </div>
+        <span class="eval-reason">{{ evaluation.reasonCode }}</span>
+      </div>
+
+      <!-- Row 4: JSON detail -->
+      <pre v-if="explain" class="eval-json">{{ JSON.stringify(explain, null, 2) }}</pre>
+
+      <p v-if="!evaluation" class="empty">Publish a snapshot, then run an evaluation.</p>
     </section>
 
     <p v-if="message" class="message" :class="{ 'message-error': messageIsError }">{{ message }}</p>
