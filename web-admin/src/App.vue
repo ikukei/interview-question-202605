@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from "vue";
+import { computed, onMounted, ref, watch } from "vue";
 import MultiSelect from "./MultiSelect.vue";
 
 const appOptions = ["vue-demo", "java-demo", "python-demo", "go-demo"];
@@ -26,13 +26,14 @@ const panelMessage = ref("");        // inline message next to Create/Update but
 const panelMessageIsError = ref(false);
 
 // configure panel
+const envPipeline = ["local", "dev", "sit", "uat", "prod"];
 const configuringFlagKey = ref<string | null>(null);
 const cfgApps = ref(["vue-demo"]);
-const cfgEnvironment = ref("local");
 const cfgRegions = ref(["Asia"]);
 const cfgSubject = ref("vip");
-const cfgEnabled = ref(true);
+const cfgEnvLevel = ref(-1);          // -1=none, 0=local, 1=local+dev, …, 4=all
 const cfgRollout = ref(100);
+const approved = ref(false);
 const latestSnapshot = ref<any | null>(null);
 
 // evaluation
@@ -46,6 +47,13 @@ const evaluation = ref<any | null>(null);
 const explain = ref<any | null>(null);
 
 // --- computed ---
+const cfgEnvs = computed(() =>
+  cfgEnvLevel.value < 0 ? [] : envPipeline.slice(0, cfgEnvLevel.value + 1)
+);
+const isProd = computed(() => cfgEnvLevel.value === envPipeline.length - 1);
+const canApprove = computed(() => isProd.value && !approved.value && cfgEnvLevel.value >= 0);
+const canPublish = computed(() => cfgEnvLevel.value >= 0 && (!isProd.value || approved.value));
+
 const conditionPreview = computed(() =>
   JSON.stringify({ region: cfgRegions.value, subject: cfgSubject.value }, null, 2)
 );
@@ -53,6 +61,13 @@ const conditionPreview = computed(() =>
 const configuringFlag = computed(() =>
   configuringFlagKey.value ? flagDefinitions.value.find(f => f.flagKey === configuringFlagKey.value) : null
 );
+
+// auto-adjust rollout and approval when pipeline level changes
+watch(cfgEnvLevel, (level) => {
+  approved.value = false;
+  if (level === envPipeline.length - 1) cfgRollout.value = 10;   // prod → 10%
+  else if (level >= 0) cfgRollout.value = 100;                    // non-prod → 100%
+});
 
 // --- helpers ---
 function todayRelease() {
@@ -179,37 +194,52 @@ async function submitFlagPanel() {
 function startConfigure(flagKey: string) {
   configuringFlagKey.value = flagKey;
   evalFlagKey.value = flagKey;
+  cfgEnvLevel.value = -1;
+  approved.value = false;
   evaluation.value = null;
   explain.value = null;
-  loadLatestSnapshot();
 }
 
 function cancelConfigure() {
   configuringFlagKey.value = null;
 }
 
+function upgrade() {
+  if (cfgEnvLevel.value < envPipeline.length - 1) cfgEnvLevel.value++;
+}
+
+function downgrade() {
+  if (cfgEnvLevel.value >= 0) cfgEnvLevel.value--;
+}
+
+function doApprove() {
+  approved.value = true;
+}
+
 async function configureFlag() {
-  if (!configuringFlagKey.value) return;
+  if (!configuringFlagKey.value || cfgEnvLevel.value < 0) return;
   busy.value = true;
   message.value = "";
   try {
-    await api(`/api/v1/flags/${encodeURIComponent(configuringFlagKey.value)}/configs`, {
-      method: "POST",
-      body: JSON.stringify({
-        appKeys: cfgApps.value,
-        environment: cfgEnvironment.value,
-        regions: cfgRegions.value,
-        subject: cfgSubject.value,
-        enabled: cfgEnabled.value,
-        rolloutPercentage: cfgRollout.value,
-        conditionJson: conditionPreview.value
-      })
-    });
+    for (const env of cfgEnvs.value) {
+      await api(`/api/v1/flags/${encodeURIComponent(configuringFlagKey.value)}/configs`, {
+        method: "POST",
+        body: JSON.stringify({
+          appKeys: cfgApps.value,
+          environment: env,
+          regions: cfgRegions.value,
+          subject: cfgSubject.value,
+          enabled: true,
+          rolloutPercentage: cfgRollout.value,
+          conditionJson: conditionPreview.value
+        })
+      });
+    }
     evalApp.value = cfgApps.value[0] || "vue-demo";
-    evalEnvironment.value = cfgEnvironment.value;
+    evalEnvironment.value = cfgEnvs.value[cfgEnvs.value.length - 1] || "local";
     evalRegion.value = cfgRegions.value[0] || "Asia";
     evalSubject.value = cfgSubject.value;
-    showInfo("Configuration saved. Click Publish to push a snapshot.");
+    showInfo(`Config saved for [${cfgEnvs.value.join(", ")}]. Click Publish to push a snapshot.`);
     await loadLatestSnapshot();
     await load();
   } catch (e) {
@@ -220,14 +250,22 @@ async function configureFlag() {
 }
 
 async function publish() {
+  if (!canPublish.value) return;
   busy.value = true;
   message.value = "";
   try {
-    latestSnapshot.value = await api("/api/v1/publish", {
-      method: "POST",
-      body: JSON.stringify({ appKey: evalApp.value, environment: evalEnvironment.value, actor: "web-admin" })
-    });
-    showInfo(`Published ${evalApp.value}/${evalEnvironment.value} snapshot v${latestSnapshot.value.version}.`);
+    let last: any;
+    for (const env of cfgEnvs.value) {
+      for (const app of cfgApps.value) {
+        last = await api("/api/v1/publish", {
+          method: "POST",
+          body: JSON.stringify({ appKey: app, environment: env, actor: "web-admin" })
+        });
+      }
+    }
+    latestSnapshot.value = last;
+    approved.value = false;   // reset after publish
+    showInfo(`Published [${cfgApps.value.join(", ")}] × [${cfgEnvs.value.join(", ")}] v${last?.version}.`);
   } catch (e) {
     showError(e);
   } finally {
@@ -263,15 +301,8 @@ async function runEvaluation() {
   }
 }
 
-function fakeWorkflow(action: string) {
-  showInfo(`${action} is intentionally disabled in this demo. Publish is the real action.`);
-}
-
-function adjustRollout(mode: "increase" | "decrease" | "full" | "kill") {
-  if (mode === "full") cfgRollout.value = 100;
-  else if (mode === "kill") cfgRollout.value = 0;
-  else if (mode === "increase") cfgRollout.value = Math.min(100, cfgRollout.value + 10);
-  else cfgRollout.value = Math.max(0, cfgRollout.value - 10);
+function adjustRollout(delta: number) {
+  cfgRollout.value = Math.max(0, Math.min(100, cfgRollout.value + delta));
 }
 
 onMounted(load);
@@ -378,63 +409,70 @@ onMounted(load);
     <!-- configure flag panel — only when a flag is selected -->
     <section v-if="configuringFlag" class="panel configure-panel">
       <div class="configure-header">
-        <h2>Configure Flag: <span class="flag-name">{{ configuringFlag.flagKey }}</span></h2>
+        <h2>Configure: <span class="flag-name">{{ configuringFlag.flagKey }}</span></h2>
         <button @click="cancelConfigure">✕</button>
       </div>
 
-      <div class="cfg-grid">
+      <!-- Row 1: Apps / Regions / Environment display / Subject -->
+      <div class="cfg-row1">
         <label>Apps
           <MultiSelect v-model="cfgApps" :options="appOptions" placeholder="— select apps —" />
         </label>
         <label>Regions
           <MultiSelect v-model="cfgRegions" :options="regionOptions" placeholder="— select regions —" />
         </label>
-        <div class="cfg-col">
-          <label>Environment
-            <select v-model="cfgEnvironment">
-              <option v-for="e in environmentOptions" :key="e" :value="e">{{ e }}</option>
-            </select>
-          </label>
-          <label>Subject
-            <select v-model="cfgSubject">
-              <option v-for="s in subjectOptions" :key="s" :value="s">{{ s }}</option>
-            </select>
-          </label>
-          <label>Enabled
-            <div class="inline-row">
-              <input type="checkbox" v-model="cfgEnabled" style="width:auto;" />
-              <span>{{ cfgEnabled ? 'On' : 'Off (kill switch)' }}</span>
-            </div>
-          </label>
-          <label>Rollout {{ cfgRollout }}%
-            <input v-model.number="cfgRollout" type="range" min="0" max="100" />
-            <div class="rollout-btns">
-              <button @click="adjustRollout('increase')">+10%</button>
-              <button @click="adjustRollout('decrease')">-10%</button>
-              <button @click="adjustRollout('full')">Full</button>
-              <button class="btn-kill" @click="adjustRollout('kill')">Kill switch</button>
-            </div>
-          </label>
+        <label>Environment
+          <div class="env-display-text">{{ cfgEnvs.length ? cfgEnvs.join(', ') : '— none —' }}</div>
+        </label>
+        <label>Subject
+          <select v-model="cfgSubject">
+            <option v-for="s in subjectOptions" :key="s" :value="s">{{ s }}</option>
+          </select>
+        </label>
+      </div>
+
+      <!-- Row 2: Pipeline | Rollout | Condition -->
+      <div class="cfg-row2">
+
+        <!-- Pipeline + upgrade/downgrade -->
+        <div class="cfg-pipeline-col">
+          <div class="pipeline-track">
+            <template v-for="(env, i) in envPipeline" :key="env">
+              <span class="pipeline-node" :class="{ 'node-active': i <= cfgEnvLevel }">{{ env }}</span>
+              <span v-if="i < envPipeline.length - 1" class="pipeline-arrow" :class="{ 'arrow-active': i < cfgEnvLevel }">→</span>
+            </template>
+          </div>
+          <div class="pipeline-btns">
+            <button @click="downgrade" :disabled="cfgEnvLevel < 0">↙ Downgrade</button>
+            <button class="primary" @click="upgrade" :disabled="cfgEnvLevel >= envPipeline.length - 1">Upgrade ↗</button>
+          </div>
         </div>
-        <div class="cfg-col">
+
+        <!-- Rollout -->
+        <div class="cfg-rollout-col">
+          <label class="rollout-label">Rollout&nbsp;<strong>{{ cfgRollout }}%</strong>
+            <input v-model.number="cfgRollout" type="range" min="0" max="100" class="rollout-slider" />
+          </label>
+          <div class="rollout-btns">
+            <button class="btn-kill" @click="cfgRollout = 0">Kill Switch</button>
+            <button @click="adjustRollout(-10)">−10%</button>
+            <button @click="adjustRollout(+10)">+10%</button>
+            <button @click="cfgRollout = 100">Full</button>
+          </div>
+        </div>
+
+        <!-- Condition preview -->
+        <div class="cfg-condition-col">
           <div class="condition-label">Condition preview</div>
           <pre class="condition-pre">{{ conditionPreview }}</pre>
         </div>
       </div>
 
-      <div class="env-path">
-        <span>local</span><span class="arrow">→</span>
-        <span>dev</span><span class="arrow">→</span>
-        <span>sit</span><span class="arrow">→</span>
-        <span>uat</span><span class="arrow">→</span>
-        <span class="env-current">prod</span>
-      </div>
-
+      <!-- Row 3: actions -->
       <div class="configure-actions">
-        <button @click="fakeWorkflow('Submit')">Submit</button>
-        <button @click="fakeWorkflow('Approve')">Approve</button>
-        <button class="primary" :disabled="busy" @click="configureFlag">Save Config</button>
-        <button class="primary" :disabled="busy" @click="publish">Publish</button>
+        <button class="primary" :disabled="busy || cfgEnvLevel < 0" @click="configureFlag">Save Config</button>
+        <button :disabled="!canApprove" @click="doApprove">Approve</button>
+        <button class="primary" :disabled="busy || !canPublish" @click="publish">Publish</button>
         <span v-if="latestSnapshot" class="snapshot-meta">
           Snapshot v{{ latestSnapshot.version }} · {{ latestSnapshot.checksum?.slice(0, 16) }}…
         </span>
