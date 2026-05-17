@@ -235,6 +235,432 @@ The full demo flow becomes: create flag → set targetRegion → publish → eva
 9. Replace `EvaluationEngineTest` with tests covering the four reason codes.
 10. Update `web-admin` flag form to show `targetRegion` and `targetUserId` fields.
 
+## Modeling Notes After Review (2026-05-17)
+
+### Current State
+
+The current implementation still uses the richer rule-engine model:
+
+- `ff_application`
+- `ff_flag`
+- `ff_rule`
+- `ff_config_snapshot`
+- `ff_audit_log`
+
+This means the simplification plan above has not been implemented yet. The current code can express generic conditions through `ff_rule.condition_json`, including `region equals us-east` and `region in us-east,us-west`.
+
+### Why a Fully Flat Flag Table Is Not Enough
+
+A completely flat `ff_flag` table is too limited for real feature management.
+
+Important cases that break a single flat record:
+
+- The same flag can be used in multiple environments, such as `local`, `dev`, `uat`, and `prod`.
+- The same flag can target multiple regions.
+- The same flag can be associated with one or more releases.
+- The same flag can gradually roll out to 1%, 5%, 25%, and then 100% of users.
+- The same flag may need to roll back from 100% to 25%, or be fully disabled as a kill switch.
+- The same flag may only apply to app versions within a range, such as `>= 2.5.0` and `< 3.0.0`.
+
+So the better direction is:
+
+```text
+Keep the flag definition simple.
+Keep runtime configuration scoped and versioned.
+Keep targeting rules flexible.
+Keep every publish or rollback as an immutable snapshot.
+```
+
+### Recommended Future Data Model
+
+If the project is refined further, use this model instead of putting all dimensions directly into `ff_flag`.
+
+```text
+ff_flag
+  id
+  flag_key
+  name
+  description
+  type
+  owner
+  status
+
+ff_flag_config
+  id
+  flag_id
+  app_key
+  environment
+  enabled
+  default_value
+  status
+
+ff_rule
+  id
+  config_id
+  priority
+  condition_json
+  rollout_percentage
+  variation_value
+  status
+
+ff_release_binding
+  id
+  config_id
+  release_key
+
+ff_config_snapshot
+  id
+  app_key
+  environment
+  version
+  checksum
+  snapshot_json
+  published_by
+  published_at
+
+ff_change_event
+  id
+  flag_id
+  config_id
+  app_key
+  environment
+  event_type
+  from_value_json
+  to_value_json
+  from_snapshot_version
+  to_snapshot_version
+  actor
+  reason
+  created_at
+```
+
+### Environment Promotion
+
+Typical flow:
+
+```text
+local -> dev -> uat -> prod
+```
+
+This should be represented as promotion of configuration, not mutation of one shared row.
+
+Example:
+
+```text
+ff_flag
+  flag_key = new-checkout
+
+ff_flag_config
+  flag_id = 1, environment = local, enabled = true
+  flag_id = 1, environment = dev,   enabled = true
+  flag_id = 1, environment = uat,   enabled = true
+  flag_id = 1, environment = prod,  enabled = false
+```
+
+A promotion action should:
+
+1. Read source environment config.
+2. Copy it to target environment config.
+3. Publish a new target environment snapshot.
+4. Write a `PROMOTE` event to `ff_change_event`.
+
+Suggested API:
+
+```text
+POST /api/v1/flags/{flagKey}/promote
+```
+
+Request:
+
+```json
+{
+  "appKey": "checkout-service",
+  "fromEnvironment": "uat",
+  "toEnvironment": "prod",
+  "actor": "demo-user"
+}
+```
+
+### Progressive Rollout
+
+After a flag reaches production, it often should not immediately go to all users.
+
+Typical flow:
+
+```text
+prod 1% -> 5% -> 25% -> 50% -> 100%
+```
+
+This should be represented on `ff_rule.rollout_percentage`, not on `ff_flag.enabled` alone.
+
+Evaluation should use deterministic hashing:
+
+```text
+bucket = hash(flagKey + ":" + subjectKey) % 100
+enabled if bucket < rolloutPercentage
+```
+
+This keeps user assignment stable across requests.
+
+Every rollout change should create:
+
+- a new config snapshot
+- a `ROLLOUT_INCREASE` or `ROLLOUT_DECREASE` event
+
+### Rollback, Ramp-Down, and Kill Switch
+
+Failure scenarios must support:
+
+- `100% -> 25% -> 5%`
+- rollback to an earlier snapshot
+- emergency full disable
+
+Do not delete history. Rollback is also a new event and should produce a new snapshot.
+
+Useful event types:
+
+```text
+PROMOTE
+DEMOTE
+ROLLOUT_INCREASE
+ROLLOUT_DECREASE
+ROLLBACK_SNAPSHOT
+KILL_SWITCH
+CONFIG_UPDATE
+PUBLISH
+```
+
+Example kill switch event:
+
+```json
+{
+  "eventType": "KILL_SWITCH",
+  "environment": "prod",
+  "fromValue": {
+    "enabled": true
+  },
+  "toValue": {
+    "enabled": false
+  },
+  "reason": "checkout error rate increased"
+}
+```
+
+### Version Range Targeting
+
+App version targeting is required for mobile or frontend clients.
+
+Do not compare versions as plain strings.
+
+Use a strict version format:
+
+```text
+MAJOR.MINOR.PATCH
+```
+
+Examples:
+
+```text
+2.5.0
+2.10.1
+3.0.0
+```
+
+Supported operators:
+
+```text
+versionEq
+versionGt
+versionGte
+versionLt
+versionLte
+versionBetween
+```
+
+Example conditions:
+
+```json
+[
+  {
+    "attribute": "appVersion",
+    "operator": "versionGte",
+    "value": "2.5.0"
+  },
+  {
+    "attribute": "appVersion",
+    "operator": "versionLt",
+    "value": "3.0.0"
+  }
+]
+```
+
+This means:
+
+```text
+Enable from 2.5.0.
+Disable before 3.0.0.
+```
+
+Invalid versions should either be rejected when saving the rule or return a clear reason code such as `INVALID_VERSION`.
+
+### Multiple Region Targeting
+
+The current rule engine can already represent multiple regions using the existing `in` operator.
+
+Current single-region example:
+
+```json
+{
+  "attribute": "region",
+  "operator": "equals",
+  "value": "us-east"
+}
+```
+
+Multiple-region example:
+
+```json
+{
+  "attribute": "region",
+  "operator": "in",
+  "value": "us-east,us-west,eu-central"
+}
+```
+
+The backend can evaluate this today, because `EvaluationEngine` supports `in`.
+
+Current limitation:
+
+```text
+web-admin does not expose a rule editor, so users cannot conveniently configure multiple regions from the UI.
+```
+
+### Recommended Direction
+
+Do not fully flatten the model.
+
+Better interview-ready model:
+
+```text
+ff_flag         = logical feature definition
+ff_flag_config  = app/environment-scoped runtime config
+ff_rule         = targeting and rollout rules
+ff_snapshot     = immutable published runtime artifact
+ff_change_event = audit, promotion, rollback, rollout history
+```
+
+This model can answer the quiz questions:
+
+- Is it enabled?
+- For whom?
+- In which region?
+- Associated with which release?
+
+It can also support realistic lifecycle operations:
+
+- environment promotion
+- gradual rollout
+- rollback
+- kill switch
+- version range targeting
+- multiple-region targeting
+
+## Implementation Plan: Minimal Evolution Model and Web Admin UX (2026-05-17)
+
+### User Request
+
+Refactor the project toward the minimal 6-table evolution model and update `web-admin` so the demo is easier to understand:
+
+1. Show backend server at the top of `web-admin`.
+2. Split admin flow into two steps:
+   - Create flag definition.
+   - Configure flag for apps, environment, regions, subject group, release, and rollout.
+3. Use label `flag` in the UI instead of `flagKey`.
+4. Remove `name` from UI; keep description.
+5. Use `value` as free text input and also provide quick true/false selection.
+6. App selection should be a multi-select list with demo apps such as `vue-demo`, `java-demo`, `python-demo`, `go-demo`.
+7. Region selection should be a multi-select list using five continents.
+8. Subject group should be selected from user groups such as internal users and VIP.
+9. Release should be a text input with quick choices for the next 7 days in `yyyyMMdd` format.
+10. Environment should support `local`, `dev`, `sit`, `uat`, `prod`.
+11. Show environment promotion flow `local -> dev -> uat -> prod` with promotion buttons.
+12. Show rollout slider and buttons: increase, decrease, full, kill switch.
+13. Version targeting is intentionally out of scope for now.
+14. `condition_json` should use a simple JSON object format, for example:
+
+```json
+{
+  "region": "Asia,Europe",
+  "subject": "vip"
+}
+```
+
+Do not use generic operator shape such as:
+
+```json
+{
+  "attribute": "appVersion",
+  "operator": "versionLt",
+  "value": "3.0.0"
+}
+```
+
+15. `Submit` and `Approve` buttons are fake demo buttons and should show a tip that they are unavailable in the demo.
+16. `Publish` is the real action that publishes the snapshot used by demos.
+17. Evaluation section should use dropdowns wherever possible.
+18. SDKs and demos should support the same app, region, subject group, release-related attributes.
+19. Update `coding.md` continuously.
+20. Commit in smaller checkpoints where possible.
+
+### Target Minimal 6 Tables
+
+```text
+ff_application
+ff_flag
+ff_flag_config
+ff_rule
+ff_config_snapshot
+ff_change_event
+```
+
+### Implementation Strategy
+
+Keep the public demo small while improving the model:
+
+- `ff_flag`: logical definition only. Store `flag_key`, description, type, status.
+- `ff_flag_config`: app/environment-scoped config. Store app, environment, enabled, value, release, rollout percentage.
+- `ff_rule`: targeting condition for one config. Store `condition_json` as a simple JSON object.
+- `ff_config_snapshot`: immutable published artifact.
+- `ff_change_event`: business event log replacing the previous generic audit direction.
+- `ff_application`: app catalog for selectable demo apps.
+
+### Progress
+
+- 2026-05-17: Plan recorded.
+- 2026-05-17: Backend refactor started. Added `ff_flag_config`, moved publish snapshots to app/environment configs, changed `ff_rule.condition_json` to generic JSON-object matching, and renamed persisted audit storage to `ff_change_event`.
+- 2026-05-17: Web admin updated to two-step flow: create logical flag, then configure apps/regions/subject/release/environment/rollout; Submit and Approve are demo-only tips, Publish is the real snapshot action.
+- 2026-05-17: SDKs and demos updated to carry `region`, `subject`, and `release`. Defaults now use `vue-demo` and `java-demo`.
+- 2026-05-17: Verification so far: `mvn -s .mvn/offline-settings.xml -DskipTests -pl backend,java-sdk,java-demo -am package` passed. `web-admin`, `frontend-sdk`, and `vue-demo` builds passed. Backend JUnit test execution and `spring-boot:run` are blocked in the sandbox by denied writes under `D:/Java/maven-repository`; escalation attempts timed out.
+- 2026-05-17: Tried to make the requested incremental commit, but the sandbox cannot create `.git/index.lock` (`Permission denied`). Escalated git attempt also timed out in auto-review. Pending commit message: `Implement minimal feature config model`.
+- 2026-05-17: Local run attempt: sandbox can start the backend with the generated `backend-run.args` manual classpath, but background processes are reclaimed when a shell command finishes. Escalated attempts to start long-running local processes timed out twice.
+- 2026-05-17: Runtime fix applied during startup test: H2 2.x treats `value` as a sensitive keyword, so `ff_flag_config.value` was renamed to database column `flag_value` while keeping API/UI field name `value`.
+- 2026-05-17: To run locally from PowerShell until Maven repository permissions are fixed:
+
+```powershell
+cd D:\YuHui\Studio\Projects_2026\interview-question-202605
+java @backend-run.args
+```
+
+```powershell
+cd D:\YuHui\Studio\Projects_2026\interview-question-202605\web-admin
+npm.cmd run dev -- --host 127.0.0.1
+```
+
+```powershell
+cd D:\YuHui\Studio\Projects_2026\interview-question-202605\vue-demo
+npm.cmd run dev -- --host 127.0.0.1
+```
+
 ## Remaining Work
 
 1. Run `mvn test` from repository root.

@@ -44,11 +44,29 @@ public class SchemaInitializer {
                 )
                 """);
         jdbcTemplate.execute("create sequence if not exists ff_flag_seq start with 1 increment by 1");
+
+        jdbcTemplate.execute("""
+                create table if not exists ff_flag_config (
+                  id number(19) primary key,
+                  flag_id number(19) not null,
+                  app_key varchar(120) not null,
+                  environment varchar(40) not null,
+                  flag_value clob not null,
+                  enabled number(1) not null,
+                  release_key varchar(160),
+                  rollout_percentage int not null,
+                  status varchar(40) not null,
+                  created_at timestamp not null,
+                  updated_at timestamp not null
+                )
+                """);
+        jdbcTemplate.execute("create sequence if not exists ff_flag_config_seq start with 1 increment by 1");
         
         jdbcTemplate.execute("""
                 create table if not exists ff_rule (
                   id number(19) primary key,
                   flag_id number(19) not null,
+                  config_id number(19),
                   priority int not null,
                   condition_json clob not null,
                   rollout_percentage int not null,
@@ -59,6 +77,7 @@ public class SchemaInitializer {
                 )
                 """);
         jdbcTemplate.execute("create sequence if not exists ff_rule_seq start with 1 increment by 1");
+        jdbcTemplate.execute("alter table ff_rule add column if not exists config_id number(19)");
         
         jdbcTemplate.execute("""
                 create table if not exists ff_config_snapshot (
@@ -75,7 +94,7 @@ public class SchemaInitializer {
         jdbcTemplate.execute("create sequence if not exists ff_config_snapshot_seq start with 1 increment by 1");
         
         jdbcTemplate.execute("""
-                create table if not exists ff_audit_log (
+                create table if not exists ff_change_event (
                   id number(19) primary key,
                   actor varchar(120) not null,
                   action varchar(80) not null,
@@ -86,6 +105,6 @@ public class SchemaInitializer {
                   created_at timestamp not null
                 )
                 """);
-        jdbcTemplate.execute("create sequence if not exists ff_audit_log_seq start with 1 increment by 1");
+        jdbcTemplate.execute("create sequence if not exists ff_change_event_seq start with 1 increment by 1");
     }
 }

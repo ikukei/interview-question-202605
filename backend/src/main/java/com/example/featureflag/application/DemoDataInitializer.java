@@ -1,12 +1,11 @@
 package com.example.featureflag.application;
 
-import com.example.featureflag.api.dto.Dtos.AddRuleRequest;
-import com.example.featureflag.api.dto.Dtos.ConditionRequest;
-import com.example.featureflag.api.dto.Dtos.CreateAppRequest;
+import com.example.featureflag.api.dto.Dtos.ConfigureFlagRequest;
 import com.example.featureflag.api.dto.Dtos.CreateFlagRequest;
 import com.example.featureflag.api.dto.Dtos.PublishRequest;
-import com.example.featureflag.infrastructure.repository.ApplicationRepository;
 import com.example.featureflag.infrastructure.repository.FlagRepository;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.annotation.Bean;
@@ -18,43 +17,38 @@ import org.springframework.context.annotation.Profile;
 public class DemoDataInitializer {
     @Bean
     CommandLineRunner seedDemoData(
-            ApplicationRepository applicationRepository,
             FlagRepository flagRepository,
             FlagService flagService,
             PublishService publishService
     ) {
         return args -> {
-            String appKey = "checkout-service";
-            String environment = "local";
             String flagKey = "new-checkout";
+            String release = LocalDate.now().format(DateTimeFormatter.BASIC_ISO_DATE);
 
-            if (applicationRepository.findByAppKey(appKey).isEmpty()) {
-                flagService.createApp(new CreateAppRequest(appKey, "Checkout Service", "Payments Platform"));
-            }
-
-            if (flagRepository.findByFlagKeyAndAppKeyAndEnvironment(flagKey, appKey, environment).isEmpty()) {
+            if (flagRepository.findByFlagKey(flagKey).isEmpty()) {
                 flagService.createFlag(new CreateFlagRequest(
                         flagKey,
-                        appKey,
-                        environment,
-                        "New Checkout",
-                        "Enables the simplified checkout experience for selected users.",
+                        null,
+                        "Enables the simplified checkout experience for selected demo users.",
                         "boolean",
-                        "false",
-                        true,
-                        "release-2026-05-checkout"
+                        "true"
                 ));
-                flagService.addRule(flagKey, new AddRuleRequest(
-                        appKey,
-                        environment,
-                        1,
-                        List.of(new ConditionRequest("region", "equals", "us-east")),
-                        100,
-                        "true",
-                        true
-                ));
-                publishService.publish(new PublishRequest(appKey, environment, "demo-seed"));
             }
+
+            flagService.configureFlag(flagKey, new ConfigureFlagRequest(
+                    List.of("vue-demo", "java-demo"),
+                    "local",
+                    List.of("Asia", "North America"),
+                    "vip",
+                    release,
+                    null,
+                    "true",
+                    true,
+                    100,
+                    null
+            ));
+            publishService.publish(new PublishRequest("vue-demo", "local", "demo-seed"));
+            publishService.publish(new PublishRequest("java-demo", "local", "demo-seed"));
         };
     }
 }

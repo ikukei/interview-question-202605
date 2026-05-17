@@ -1,6 +1,7 @@
 package com.example.featureflag.application.model;
 
 import java.util.List;
+import java.util.Map;
 
 public final class SnapshotModels {
     private SnapshotModels() {
@@ -19,7 +20,7 @@ public final class SnapshotModels {
             String flagKey,
             String type,
             boolean enabled,
-            String defaultValue,
+            String value,
             String releaseKey,
             List<SnapshotRule> rules
     ) {
@@ -28,16 +29,9 @@ public final class SnapshotModels {
     public record SnapshotRule(
             String ruleId,
             int priority,
-            List<SnapshotCondition> conditions,
+            Map<String, Object> conditionJson,
             int rolloutPercentage,
             String variationValue
-    ) {
-    }
-
-    public record SnapshotCondition(
-            String attribute,
-            String operator,
-            String value
     ) {
     }
 }

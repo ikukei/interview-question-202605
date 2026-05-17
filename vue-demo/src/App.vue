@@ -4,10 +4,17 @@ import { createFeatureClient, type FeatureEvaluation } from "../../frontend-sdk/
 
 const baseUrl = ref("http://localhost:8080");
 const subjectKey = ref("vue-demo-user");
-const region = ref("us-east");
+const region = ref("Asia");
+const subject = ref("vip");
+const release = ref(todayRelease());
 const evaluations = ref<FeatureEvaluation[]>([]);
 const error = ref("");
 const loading = ref(false);
+
+function todayRelease() {
+  const date = new Date();
+  return `${date.getFullYear()}${String(date.getMonth() + 1).padStart(2, "0")}${String(date.getDate()).padStart(2, "0")}`;
+}
 
 async function loadFeatures() {
   loading.value = true;
@@ -16,15 +23,20 @@ async function loadFeatures() {
 
   const client = createFeatureClient({
     baseUrl: baseUrl.value,
-    appKey: "checkout-service",
+    appKey: "vue-demo",
     environment: "local"
   });
 
   try {
     evaluations.value = await client.evaluateAll({
       subjectKey: subjectKey.value,
+      region: region.value,
+      subject: subject.value,
+      release: release.value,
       attributes: {
         region: region.value,
+        subject: subject.value,
+        release: release.value,
         platform: "vue-demo"
       }
     }, "false");
@@ -53,6 +65,8 @@ onMounted(loadFeatures);
         <label>Backend URL<input v-model="baseUrl" /></label>
         <label>Subject Key<input v-model="subjectKey" /></label>
         <label>Region<input v-model="region" /></label>
+        <label>Subject<input v-model="subject" /></label>
+        <label>Release<input v-model="release" /></label>
       </div>
 
       <div v-if="evaluations.length === 0 && !loading && !error" class="empty">

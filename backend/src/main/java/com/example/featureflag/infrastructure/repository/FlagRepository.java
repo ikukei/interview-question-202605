@@ -20,6 +20,23 @@ public class FlagRepository {
         return jdbcTemplate.query(sql, this::mapRow, appKey, environment);
     }
 
+    public List<FlagEntity> findAllOrderByFlagKeyAsc() {
+        String sql = "select * from ff_flag order by flag_key";
+        return jdbcTemplate.query(sql, this::mapRow);
+    }
+
+    public Optional<FlagEntity> findById(Long id) {
+        String sql = "select * from ff_flag where id = ?";
+        List<FlagEntity> result = jdbcTemplate.query(sql, this::mapRow, id);
+        return result.isEmpty() ? Optional.empty() : Optional.of(result.get(0));
+    }
+
+    public Optional<FlagEntity> findByFlagKey(String flagKey) {
+        String sql = "select * from ff_flag where flag_key = ?";
+        List<FlagEntity> result = jdbcTemplate.query(sql, this::mapRow, flagKey);
+        return result.isEmpty() ? Optional.empty() : Optional.of(result.get(0));
+    }
+
     public Optional<FlagEntity> findByFlagKeyAndAppKeyAndEnvironment(String flagKey, String appKey, String environment) {
         String sql = "select * from ff_flag where flag_key = ? and app_key = ? and environment = ?";
         List<FlagEntity> result = jdbcTemplate.query(sql, this::mapRow, flagKey, appKey, environment);
@@ -36,8 +53,9 @@ public class FlagRepository {
                 insert into ff_flag(id, flag_key, app_key, environment, name, description, type, default_value, enabled, release_key, status, created_at, updated_at)
                 values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """;
+        String logicalName = flag.getName() == null || flag.getName().isBlank() ? flag.getFlagKey() : flag.getName();
         jdbcTemplate.update(sql, nextId, flag.getFlagKey(), flag.getAppKey(), flag.getEnvironment(),
-                flag.getName(), flag.getDescription(), flag.getType(), flag.getDefaultValue(),
+                logicalName, flag.getDescription(), flag.getType(), flag.getDefaultValue(),
                 flag.isEnabled() ? 1 : 0, flag.getReleaseKey(), flag.getStatus(),
                 Timestamp.from(flag.getCreatedAt()), Timestamp.from(flag.getUpdatedAt()));
         flag.setId(nextId);

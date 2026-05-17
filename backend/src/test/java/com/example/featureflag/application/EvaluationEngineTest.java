@@ -5,7 +5,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import com.example.featureflag.api.dto.Dtos.EvaluationContext;
 import com.example.featureflag.application.EvaluationEngine.EvaluationDecision;
 import com.example.featureflag.application.model.SnapshotModels.Snapshot;
-import com.example.featureflag.application.model.SnapshotModels.SnapshotCondition;
 import com.example.featureflag.application.model.SnapshotModels.SnapshotFlag;
 import com.example.featureflag.application.model.SnapshotModels.SnapshotRule;
 import java.util.List;
@@ -71,14 +70,12 @@ public class EvaluationEngineTest {
     private Snapshot snapshotWithRule(int rolloutPercentage) {
         return new Snapshot("checkout-service", "local", 7, "checksum", List.of(
                 new SnapshotFlag("new-checkout", "boolean", true, "false", "release-1", List.of(
-                        new SnapshotRule("rule-1", 1, List.of(
-                                new SnapshotCondition("region", "equals", "us-east")
-                        ), rolloutPercentage, "true")
+                new SnapshotRule("rule-1", 1, Map.of("region", "us-east"), rolloutPercentage, "true")
                 ))
         ));
     }
 
     private EvaluationContext context(String subjectKey, String region) {
-        return new EvaluationContext(subjectKey, Map.of("region", region, "platform", "cli"));
+        return new EvaluationContext(subjectKey, region, null, null, null, null, Map.of("region", region, "platform", "cli"));
     }
 }

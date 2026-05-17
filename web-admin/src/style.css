@@ -11,7 +11,8 @@ body {
 
 button,
 input,
-select {
+select,
+textarea {
   font: inherit;
 }
 
@@ -33,13 +34,21 @@ button:disabled {
   cursor: not-allowed;
 }
 
-select {
+select,
+textarea {
   border: 1px solid #cdd5df;
   border-radius: 6px;
   padding: 6px 10px;
   color: #1d2433;
   background: white;
+}
+
+select {
   cursor: pointer;
+}
+
+select[multiple] {
+  min-height: 108px;
 }
 
 .shell {
@@ -66,9 +75,19 @@ select {
   color: #647083;
 }
 
+.top-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.top-actions input {
+  min-width: 280px;
+}
+
 .workspace {
   display: grid;
-  grid-template-columns: 300px minmax(0, 1fr);
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 16px;
 }
 
@@ -101,6 +120,21 @@ input {
   color: #1d2433;
 }
 
+textarea {
+  width: 100%;
+  resize: vertical;
+}
+
+.eyebrow {
+  display: inline-flex;
+  margin-bottom: 8px;
+  color: #206b82;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
 .actions,
 .flag-list {
   display: flex;
@@ -119,6 +153,17 @@ input {
   margin: 12px 0 0;
   color: #647083;
   overflow-wrap: anywhere;
+}
+
+.path {
+  margin: 10px 0;
+  color: #206b82;
+  font-weight: 700;
+}
+
+.condition {
+  margin: 12px 0;
+  max-height: 150px;
 }
 
 .details {
@@ -209,6 +254,8 @@ input {
   color: #206b82;
 }
 
+.workflow,
+.list-panel,
 .playground,
 .result {
   grid-column: 1 / -1;

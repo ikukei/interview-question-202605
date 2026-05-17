@@ -6,6 +6,7 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.time.Duration;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -40,10 +41,7 @@ public class FeatureClient {
             Map<String, Object> body = Map.of(
                     "appKey", appKey,
                     "environment", environment,
-                    "context", Map.of(
-                            "subjectKey", context.subjectKey(),
-                            "attributes", context.attributes()
-                    ),
+                    "context", contextBody(context),
                     "defaultValue", defaultValue
             );
             String json = objectMapper.writeValueAsString(body);
@@ -91,10 +89,7 @@ public class FeatureClient {
                     "appKey", appKey,
                     "environment", environment,
                     "flagKeys", flagKeys,
-                    "context", Map.of(
-                            "subjectKey", context.subjectKey(),
-                            "attributes", context.attributes()
-                    ),
+                    "context", contextBody(context),
                     "defaultValue", defaultValue
             );
             String json = objectMapper.writeValueAsString(body);
@@ -122,9 +117,19 @@ public class FeatureClient {
         return value;
     }
 
+    private Map<String, Object> contextBody(FeatureContext context) {
+        Map<String, Object> body = new LinkedHashMap<>();
+        body.put("subjectKey", context.subjectKey());
+        body.put("region", context.region());
+        body.put("subject", context.subject());
+        body.put("release", context.release());
+        body.put("attributes", context.attributes());
+        return body;
+    }
+
     public static class Builder {
         private String baseUrl = "http://localhost:8080";
-        private String appKey = "checkout-service";
+        private String appKey = "java-demo";
         private String environment = "local";
 
         public Builder baseUrl(String baseUrl) {

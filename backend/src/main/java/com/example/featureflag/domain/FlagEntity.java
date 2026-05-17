@@ -5,8 +5,8 @@ import java.time.Instant;
 public class FlagEntity {
     private Long id;
     private String flagKey;
-    private String appKey;
-    private String environment;
+    private String appKey = "*";
+    private String environment = "*";
     private String name;
     private String description;
     private String type = "boolean";

@@ -5,8 +5,9 @@ import java.time.Instant;
 public class RuleEntity {
     private Long id;
     private Long flagId;
+    private Long configId;
     private int priority = 100;
-    private String conditionJson = "[]";
+    private String conditionJson = "{}";
     private int rolloutPercentage = 100;
     private String variationValue = "true";
     private boolean enabled = true;
@@ -27,6 +28,14 @@ public class RuleEntity {
 
     public void setFlagId(Long flagId) {
         this.flagId = flagId;
+    }
+
+    public Long getConfigId() {
+        return configId;
+    }
+
+    public void setConfigId(Long configId) {
+        this.configId = configId;
     }
 
     public int getPriority() {

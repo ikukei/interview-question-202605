@@ -3,6 +3,7 @@ package com.example.featuredemo;
 import com.example.featureflagsdk.FeatureClient;
 import com.example.featureflagsdk.FeatureContext;
 import com.example.featureflagsdk.FeatureEvaluation;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.HashSet;
@@ -15,24 +16,29 @@ public class JavaFeatureDemo {
     public static void main(String[] args) {
         String baseUrl = arg(args, 0, "http://localhost:8080");
         String subjectKey = arg(args, 1, "java-demo-user");
-        String region = arg(args, 2, "us-east");
-        int pollInterval = Integer.parseInt(arg(args, 3, "3"));
+        String region = arg(args, 2, "Asia");
+        String subject = arg(args, 3, "vip");
+        String release = arg(args, 4, LocalDate.now().format(DateTimeFormatter.BASIC_ISO_DATE));
+        int pollInterval = Integer.parseInt(arg(args, 5, "3"));
 
         FeatureClient client = FeatureClient.builder()
                 .baseUrl(baseUrl)
-                .appKey("checkout-service")
+                .appKey("java-demo")
                 .environment("local")
                 .build();
 
         FeatureContext context = FeatureContext.builder()
                 .subjectKey(subjectKey)
-                .attribute("region", region)
+                .region(region)
+                .subject(subject)
+                .release(release)
                 .attribute("platform", "java-cli")
                 .build();
 
         Set<String> knownFlags = new HashSet<>();
         
         System.out.println("=== Java Feature Flag Demo ===");
+        System.out.println("App: java-demo, region: " + region + ", subject: " + subject + ", release: " + release);
         System.out.println("Polling for feature flags every " + pollInterval + " seconds...");
         System.out.println("Press Ctrl+C to exit.\n");
 

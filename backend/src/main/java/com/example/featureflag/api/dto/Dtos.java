@@ -19,43 +19,51 @@ public final class Dtos {
     }
 
     public record CreateFlagRequest(
+            String flag,
             String flagKey,
-            String appKey,
-            String environment,
-            String name,
             String description,
             String type,
-            String defaultValue,
-            Boolean enabled,
-            String releaseKey
+            String value
     ) {
     }
 
     public record UpdateFlagRequest(
-            String appKey,
-            String environment,
-            String name,
             String description,
-            String defaultValue,
-            Boolean enabled,
-            String releaseKey,
+            String type,
             String status
     ) {
     }
 
     public record FlagResponse(
             Long id,
+            Long configId,
+            String flag,
             String flagKey,
             String appKey,
             String environment,
-            String name,
             String description,
             String type,
-            String defaultValue,
+            String value,
             boolean enabled,
             String releaseKey,
             String status,
+            int rolloutPercentage,
+            String conditionJson,
             List<RuleResponse> rules
+    ) {
+    }
+
+    public record ConfigureFlagRequest(
+            List<String> appKeys,
+            String environment,
+            List<String> regions,
+            String subject,
+            String release,
+            String releaseKey,
+            String value,
+            Boolean enabled,
+            Integer rolloutPercentage,
+            String conditionJson
     ) {
     }
 
@@ -64,6 +72,7 @@ public final class Dtos {
             String environment,
             int priority,
             List<ConditionRequest> conditions,
+            String conditionJson,
             int rolloutPercentage,
             String variationValue,
             Boolean enabled
@@ -81,6 +90,7 @@ public final class Dtos {
             Long id,
             int priority,
             List<ConditionRequest> conditions,
+            String conditionJson,
             int rolloutPercentage,
             String variationValue,
             boolean enabled
@@ -105,6 +115,11 @@ public final class Dtos {
 
     public record EvaluationContext(
             String subjectKey,
+            String region,
+            String subject,
+            String subjectGroup,
+            String release,
+            String releaseKey,
             Map<String, String> attributes
     ) {
     }

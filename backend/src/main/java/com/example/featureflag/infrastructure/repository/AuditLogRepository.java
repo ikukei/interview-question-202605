@@ -14,9 +14,9 @@ public class AuditLogRepository {
     }
 
     public AuditLogEntity save(AuditLogEntity log) {
-        long nextId = jdbcTemplate.queryForObject("select ff_audit_log_seq.nextval from dual", Long.class);
+        long nextId = jdbcTemplate.queryForObject("select ff_change_event_seq.nextval from dual", Long.class);
         String sql = """
-                insert into ff_audit_log(id, actor, action, resource_type, resource_key, before_json, after_json, created_at)
+                insert into ff_change_event(id, actor, action, resource_type, resource_key, before_json, after_json, created_at)
                 values (?, ?, ?, ?, ?, ?, ?, ?)
                 """;
         jdbcTemplate.update(sql, nextId, log.getActor(), log.getAction(), log.getResourceType(), 

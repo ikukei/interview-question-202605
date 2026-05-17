@@ -2,6 +2,7 @@ package com.example.featureflag.api;
 
 import com.example.featureflag.api.dto.Dtos.AddRuleRequest;
 import com.example.featureflag.api.dto.Dtos.AppResponse;
+import com.example.featureflag.api.dto.Dtos.ConfigureFlagRequest;
 import com.example.featureflag.api.dto.Dtos.CreateAppRequest;
 import com.example.featureflag.api.dto.Dtos.CreateFlagRequest;
 import com.example.featureflag.api.dto.Dtos.FlagResponse;
@@ -45,6 +46,11 @@ public class FlagController {
     @GetMapping("/flags")
     public List<FlagResponse> listFlags(@RequestParam String appKey, @RequestParam String environment) {
         return flagService.listFlags(appKey, environment);
+    }
+
+    @PostMapping("/flags/{flagKey}/configs")
+    public List<FlagResponse> configureFlag(@PathVariable String flagKey, @RequestBody ConfigureFlagRequest request) {
+        return flagService.configureFlag(flagKey, request);
     }
 
     @PutMapping("/flags/{flagKey}")

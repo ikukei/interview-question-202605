@@ -2,6 +2,11 @@ export type FeatureAttributes = Record<string, string>;
 
 export interface FeatureContext {
   subjectKey: string;
+  region?: string;
+  subject?: string;
+  subjectGroup?: string;
+  release?: string;
+  releaseKey?: string;
   attributes?: FeatureAttributes;
 }
 

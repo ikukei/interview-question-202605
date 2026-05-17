@@ -1,16 +1,16 @@
 package com.example.featureflag.application;
 
-import com.example.featureflag.api.dto.Dtos.ConditionRequest;
 import com.example.featureflag.api.dto.Dtos.PublishRequest;
 import com.example.featureflag.api.dto.Dtos.SnapshotResponse;
 import com.example.featureflag.application.model.SnapshotModels.Snapshot;
-import com.example.featureflag.application.model.SnapshotModels.SnapshotCondition;
 import com.example.featureflag.application.model.SnapshotModels.SnapshotFlag;
 import com.example.featureflag.application.model.SnapshotModels.SnapshotRule;
 import com.example.featureflag.domain.ConfigSnapshotEntity;
+import com.example.featureflag.domain.FlagConfigEntity;
 import com.example.featureflag.domain.FlagEntity;
 import com.example.featureflag.domain.RuleEntity;
 import com.example.featureflag.infrastructure.repository.ConfigSnapshotRepository;
+import com.example.featureflag.infrastructure.repository.FlagConfigRepository;
 import com.example.featureflag.infrastructure.repository.FlagRepository;
 import com.example.featureflag.infrastructure.repository.RuleRepository;
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -19,11 +19,13 @@ import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.util.HexFormat;
 import java.util.List;
+import java.util.Map;
 import org.springframework.stereotype.Service;
 
 @Service
 public class PublishService {
     private final FlagRepository flagRepository;
+    private final FlagConfigRepository configRepository;
     private final RuleRepository ruleRepository;
     private final ConfigSnapshotRepository snapshotRepository;
     private final SnapshotCache snapshotCache;
@@ -32,6 +34,7 @@ public class PublishService {
 
     public PublishService(
             FlagRepository flagRepository,
+            FlagConfigRepository configRepository,
             RuleRepository ruleRepository,
             ConfigSnapshotRepository snapshotRepository,
             SnapshotCache snapshotCache,
@@ -39,6 +42,7 @@ public class PublishService {
             ObjectMapper objectMapper
     ) {
         this.flagRepository = flagRepository;
+        this.configRepository = configRepository;
         this.ruleRepository = ruleRepository;
         this.snapshotRepository = snapshotRepository;
         this.snapshotCache = snapshotCache;
@@ -52,10 +56,10 @@ public class PublishService {
                 .map(ConfigSnapshotEntity::getVersion)
                 .orElse(0L) + 1L;
 
-        List<SnapshotFlag> flags = flagRepository
-                .findByAppKeyAndEnvironmentOrderByFlagKeyAsc(request.appKey(), request.environment())
+        List<SnapshotFlag> flags = configRepository
+                .findByAppKeyAndEnvironmentOrderByIdAsc(request.appKey(), request.environment())
                 .stream()
-                .filter(flag -> !"archived".equalsIgnoreCase(flag.getStatus()))
+                .filter(config -> !"archived".equalsIgnoreCase(config.getStatus()))
                 .map(this::toSnapshotFlag)
                 .toList();
 
@@ -94,8 +98,10 @@ public class PublishService {
                 });
     }
 
-    private SnapshotFlag toSnapshotFlag(FlagEntity flag) {
-        List<SnapshotRule> rules = ruleRepository.findByFlagIdOrderByPriorityAsc(flag.getId())
+    private SnapshotFlag toSnapshotFlag(FlagConfigEntity config) {
+        FlagEntity flag = flagRepository.findById(config.getFlagId())
+                .orElseThrow(() -> new NotFoundException("Flag not found: " + config.getFlagId()));
+        List<SnapshotRule> rules = ruleRepository.findByConfigIdOrderByPriorityAsc(config.getId())
                 .stream()
                 .filter(RuleEntity::isEnabled)
                 .map(this::toSnapshotRule)
@@ -103,33 +109,29 @@ public class PublishService {
         return new SnapshotFlag(
                 flag.getFlagKey(),
                 flag.getType(),
-                flag.isEnabled(),
-                flag.getDefaultValue(),
-                flag.getReleaseKey(),
+                config.isEnabled(),
+                config.getValue(),
+                config.getReleaseKey(),
                 rules
         );
     }
 
     private SnapshotRule toSnapshotRule(RuleEntity rule) {
-        List<SnapshotCondition> conditions = readConditions(rule.getConditionJson())
-                .stream()
-                .map(condition -> new SnapshotCondition(condition.attribute(), condition.operator(), condition.value()))
-                .toList();
         return new SnapshotRule(
                 String.valueOf(rule.getId()),
                 rule.getPriority(),
-                conditions,
+                readConditionJson(rule.getConditionJson()),
                 rule.getRolloutPercentage(),
                 rule.getVariationValue()
         );
     }
 
-    private List<ConditionRequest> readConditions(String json) {
+    private Map<String, Object> readConditionJson(String json) {
         try {
             return objectMapper.readValue(json, new TypeReference<>() {
             });
         } catch (Exception ex) {
-            throw new IllegalStateException("Invalid condition JSON", ex);
+            throw new IllegalStateException("Invalid condition_json", ex);
         }
     }
 
