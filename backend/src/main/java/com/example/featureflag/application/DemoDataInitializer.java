@@ -35,7 +35,7 @@ public class DemoDataInitializer {
             }
 
             flagService.configureFlag(flagKey, new ConfigureFlagRequest(
-                    List.of("vue-demo", "java-demo"),
+                    List.of("vue-demo", "java-demo", "python-demo"),
                     "local",
                     List.of("Asia", "North America"),
                     "vip",
@@ -45,6 +45,7 @@ public class DemoDataInitializer {
             ));
             publishService.publish(new PublishRequest("vue-demo", "local", "demo-seed"));
             publishService.publish(new PublishRequest("java-demo", "local", "demo-seed"));
+            publishService.publish(new PublishRequest("python-demo", "local", "demo-seed"));
         };
     }
 }
