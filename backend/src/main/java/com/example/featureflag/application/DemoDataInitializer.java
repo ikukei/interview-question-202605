@@ -19,7 +19,8 @@ public class DemoDataInitializer {
     CommandLineRunner seedDemoData(
             FlagRepository flagRepository,
             FlagService flagService,
-            PublishService publishService
+            PublishService publishService,
+            AuditService auditService
     ) {
         return args -> {
             String flagKey = "google-sso";
@@ -32,6 +33,9 @@ public class DemoDataInitializer {
                         "boolean",
                         release
                 ));
+                auditService.record("demo-seed", "CREATE", "flag", flagKey,
+                        null,
+                        "{\"flagKey\":\"" + flagKey + "\",\"type\":\"boolean\",\"release\":\"" + release + "\"}");
             }
 
             flagService.configureFlag(flagKey, new ConfigureFlagRequest(
@@ -43,9 +47,16 @@ public class DemoDataInitializer {
                     100,
                     null
             ));
+            auditService.record("demo-seed", "CONFIGURE", "flag", flagKey,
+                    null,
+                    "{\"apps\":[\"vue-demo\",\"java-demo\",\"python-demo\"],\"environment\":\"local\",\"regions\":[\"Asia\",\"North America\"],\"subjects\":[\"vip\"],\"rollout\":100}");
+
             publishService.publish(new PublishRequest("vue-demo", "local", "demo-seed"));
             publishService.publish(new PublishRequest("java-demo", "local", "demo-seed"));
             publishService.publish(new PublishRequest("python-demo", "local", "demo-seed"));
+            auditService.record("demo-seed", "PUBLISH", "snapshot", flagKey,
+                    null,
+                    "{\"apps\":[\"vue-demo\",\"java-demo\",\"python-demo\"],\"environment\":\"local\"}");
         };
     }
 }

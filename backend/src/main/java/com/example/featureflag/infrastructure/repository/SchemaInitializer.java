@@ -25,7 +25,7 @@ public class SchemaInitializer {
                 )
                 """);
         jdbcTemplate.execute("create sequence if not exists ff_application_seq start with 1 increment by 1");
-        
+
         jdbcTemplate.execute("""
                 create table if not exists ff_flag (
                   id number(19) primary key,
@@ -55,7 +55,7 @@ public class SchemaInitializer {
                 )
                 """);
         jdbcTemplate.execute("create sequence if not exists ff_flag_config_seq start with 1 increment by 1");
-        
+
         jdbcTemplate.execute("""
                 create table if not exists ff_rule (
                   id number(19) primary key,
@@ -67,7 +67,7 @@ public class SchemaInitializer {
                 )
                 """);
         jdbcTemplate.execute("create sequence if not exists ff_rule_seq start with 1 increment by 1");
-        
+
         jdbcTemplate.execute("""
                 create table if not exists ff_config_snapshot (
                   id number(19) primary key,
@@ -81,7 +81,7 @@ public class SchemaInitializer {
                 )
                 """);
         jdbcTemplate.execute("create sequence if not exists ff_config_snapshot_seq start with 1 increment by 1");
-        
+
         jdbcTemplate.execute("""
                 create table if not exists ff_change_event (
                   id number(19) primary key,

@@ -36,6 +36,29 @@ const cfgRollout = ref(100);
 const approved = ref(false);
 const latestSnapshot = ref<any | null>(null);
 
+// audit modal
+const auditFlagKey = ref<string | null>(null);
+const auditLogs = ref<any[]>([]);
+const auditLoading = ref(false);
+
+async function openAudit(flagKey: string) {
+  auditFlagKey.value = flagKey;
+  auditLogs.value = [];
+  auditLoading.value = true;
+  try {
+    auditLogs.value = await api(`/api/v1/audit?flagKey=${encodeURIComponent(flagKey)}`);
+  } catch (e) {
+    auditLogs.value = [];
+  } finally {
+    auditLoading.value = false;
+  }
+}
+
+function closeAudit() {
+  auditFlagKey.value = null;
+  auditLogs.value = [];
+}
+
 // evaluation
 const evalApp = ref("vue-demo");
 const evalEnvironment = ref("local");
@@ -397,6 +420,10 @@ onMounted(load);
               >
                 {{ configuringFlagKey === flag.flagKey ? 'Close' : 'Configure' }}
               </button>
+              <button
+                class="btn-audit btn-action"
+                @click="openAudit(flag.flagKey)"
+              >Audit</button>
             </td>
           </tr>
           <tr v-if="!flagDefinitions.length">
@@ -530,4 +557,151 @@ onMounted(load);
 
     <p v-if="message" class="message" :class="{ 'message-error': messageIsError }">{{ message }}</p>
   </main>
+
+  <!-- Audit history modal -->
+  <teleport to="body">
+    <div v-if="auditFlagKey" class="modal-backdrop" @click.self="closeAudit">
+      <div class="modal">
+        <div class="modal-header">
+          <h2>Audit History — <span class="flag-name">{{ auditFlagKey }}</span></h2>
+          <button class="modal-close" @click="closeAudit">✕</button>
+        </div>
+        <div class="modal-body">
+          <p v-if="auditLoading" class="muted">Loading…</p>
+          <p v-else-if="auditLogs.length === 0" class="muted">No audit records found.</p>
+          <table v-else class="audit-table">
+            <thead>
+              <tr>
+                <th>Time</th>
+                <th>Actor</th>
+                <th>Action</th>
+                <th>Before</th>
+                <th>After</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="log in auditLogs" :key="log.id">
+                <td class="audit-time">{{ new Date(log.createdAt).toLocaleString() }}</td>
+                <td>{{ log.actor }}</td>
+                <td><span class="audit-action">{{ log.action }}</span></td>
+                <td><pre class="audit-json">{{ log.beforeJson ?? '—' }}</pre></td>
+                <td><pre class="audit-json">{{ log.afterJson ?? '—' }}</pre></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </teleport>
 </template>
+
+<style scoped>
+.btn-audit {
+  background: #f0f0f0;
+  color: #555;
+  border: 1px solid #ccc;
+}
+.btn-audit:hover {
+  background: #6b3fa0;
+  color: #fff;
+  border-color: #6b3fa0;
+}
+
+/* Modal */
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+.modal {
+  background: #fff;
+  border-radius: 10px;
+  box-shadow: 0 8px 40px rgba(0,0,0,0.18);
+  width: min(90vw, 960px);
+  max-height: 80vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem 1.25rem;
+  border-bottom: 1px solid #e5e7eb;
+  flex-shrink: 0;
+}
+.modal-header h2 {
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 600;
+}
+.modal-close {
+  background: none;
+  border: none;
+  font-size: 1.1rem;
+  cursor: pointer;
+  color: #888;
+  padding: 0.2rem 0.4rem;
+}
+.modal-close:hover { color: #222; }
+.modal-body {
+  overflow-y: auto;
+  padding: 1rem 1.25rem;
+  flex: 1;
+}
+
+.audit-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.82rem;
+}
+.audit-table th {
+  text-align: left;
+  padding: 0.5rem 0.6rem;
+  background: #f9fafb;
+  border-bottom: 2px solid #e5e7eb;
+  font-weight: 600;
+  color: #374151;
+  white-space: nowrap;
+}
+.audit-table td {
+  padding: 0.45rem 0.6rem;
+  border-bottom: 1px solid #f0f0f0;
+  vertical-align: top;
+}
+.audit-table tr:hover td { background: #fafafa; }
+.audit-time {
+  white-space: nowrap;
+  color: #6b7280;
+  font-size: 0.78rem;
+}
+.audit-action {
+  display: inline-block;
+  padding: 0.15rem 0.5rem;
+  border-radius: 4px;
+  background: #ede9fe;
+  color: #5b21b6;
+  font-size: 0.78rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.audit-json {
+  margin: 0;
+  font-size: 0.72rem;
+  color: #374151;
+  white-space: pre-wrap;
+  word-break: break-all;
+  max-width: 260px;
+  max-height: 80px;
+  overflow: auto;
+  background: #f9fafb;
+  border-radius: 4px;
+  padding: 0.2rem 0.4rem;
+}
+.muted { color: #9ca3af; font-size: 0.9rem; }
+</style>
