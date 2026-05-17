@@ -31,7 +31,9 @@ public final class Dtos {
     public record UpdateFlagRequest(
             String description,
             String type,
-            String status
+            String status,
+            String release,
+            Boolean enabled
     ) {
     }
 

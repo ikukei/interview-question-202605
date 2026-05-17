@@ -15,12 +15,15 @@ const busy = ref(false);
 const message = ref("");
 const messageIsError = ref(false);
 
-// create panel
+// create / edit panel
 const showCreatePanel = ref(false);
+const editingFlagKey = ref<string | null>(null); // null = create mode, set = edit mode
 const newFlag = ref("");
 const newFlagDescription = ref("");
 const newFlagRelease = ref(todayRelease());
 const newFlagEnabled = ref(true);
+const panelMessage = ref("");        // inline message next to Create/Update button
+const panelMessageIsError = ref(false);
 
 // configure panel
 const configuringFlagKey = ref<string | null>(null);
@@ -84,6 +87,42 @@ function showInfo(msg: string) {
   messageIsError.value = false;
 }
 
+function showPanelError(e: unknown) {
+  panelMessage.value = String(e instanceof Error ? e.message : e);
+  panelMessageIsError.value = true;
+}
+
+function showPanelInfo(msg: string) {
+  panelMessage.value = msg;
+  panelMessageIsError.value = false;
+}
+
+function openCreatePanel() {
+  editingFlagKey.value = null;
+  newFlag.value = "";
+  newFlagDescription.value = "";
+  newFlagRelease.value = todayRelease();
+  newFlagEnabled.value = true;
+  panelMessage.value = "";
+  showCreatePanel.value = true;
+}
+
+function openEditPanel(flag: any) {
+  editingFlagKey.value = flag.flagKey;
+  newFlag.value = flag.flagKey;
+  newFlagDescription.value = flag.description ?? "";
+  newFlagRelease.value = flag.releaseKey ?? todayRelease();
+  newFlagEnabled.value = flag.enabled ?? true;
+  panelMessage.value = "";
+  showCreatePanel.value = true;
+}
+
+function closePanel() {
+  showCreatePanel.value = false;
+  editingFlagKey.value = null;
+  panelMessage.value = "";
+}
+
 // --- actions ---
 async function load() {
   busy.value = true;
@@ -100,27 +139,40 @@ async function load() {
   }
 }
 
-async function createFlag() {
-  if (!newFlag.value.trim()) { showError("Please enter a flag key."); return; }
-  busy.value = true;
-  message.value = "";
-  try {
-    const created = await api("/api/v1/flags", {
-      method: "POST",
-      body: JSON.stringify({ flag: newFlag.value.trim(), description: newFlagDescription.value.trim(), type: "boolean", release: newFlagRelease.value, enabled: newFlagEnabled.value })
-    });
-    showInfo(`Flag "${created.flagKey}" created.`);
-    newFlag.value = "";
-    newFlagDescription.value = "";
-    newFlagRelease.value = todayRelease();
-    newFlagEnabled.value = true;
-    showCreatePanel.value = false;
-    await load();
-    startConfigure(created.flagKey);
-  } catch (e) {
-    showError(e);
-  } finally {
-    busy.value = false;
+async function submitFlagPanel() {
+  panelMessage.value = "";
+  if (editingFlagKey.value) {
+    // edit mode — PUT
+    busy.value = true;
+    try {
+      await api(`/api/v1/flags/${encodeURIComponent(editingFlagKey.value)}`, {
+        method: "PUT",
+        body: JSON.stringify({ description: newFlagDescription.value.trim(), release: newFlagRelease.value, enabled: newFlagEnabled.value })
+      });
+      showPanelInfo(`Flag "${editingFlagKey.value}" updated.`);
+      await load();
+    } catch (e) {
+      showPanelError(e);
+    } finally {
+      busy.value = false;
+    }
+  } else {
+    // create mode — POST
+    if (!newFlag.value.trim()) { showPanelError("Please enter a flag key."); return; }
+    busy.value = true;
+    try {
+      const created = await api("/api/v1/flags", {
+        method: "POST",
+        body: JSON.stringify({ flag: newFlag.value.trim(), description: newFlagDescription.value.trim(), type: "boolean", release: newFlagRelease.value, enabled: newFlagEnabled.value })
+      });
+      closePanel();
+      await load();
+      startConfigure(created.flagKey);
+    } catch (e) {
+      showPanelError(e);
+    } finally {
+      busy.value = false;
+    }
   }
 }
 
@@ -242,16 +294,18 @@ onMounted(load);
 
     <!-- create flag trigger -->
     <div class="table-toolbar">
-      <button class="primary" @click="showCreatePanel = !showCreatePanel">
+      <button class="primary" @click="showCreatePanel ? closePanel() : openCreatePanel()">
         {{ showCreatePanel ? '✕ Cancel' : '+ New Flag' }}
       </button>
     </div>
 
-    <!-- create flag panel — only when showCreatePanel -->
+    <!-- create / edit flag panel -->
     <section v-if="showCreatePanel" class="panel create-panel">
-      <h2>Create Flag</h2>
+      <h2>{{ editingFlagKey ? 'Edit Flag' : 'Create Flag' }}</h2>
       <div class="create-grid">
-        <label>Flag key<input v-model="newFlag" placeholder="e.g. new-checkout" /></label>
+        <label>Flag key
+          <input v-model="newFlag" placeholder="e.g. new-checkout" :readonly="!!editingFlagKey" :class="{ 'input-readonly': !!editingFlagKey }" />
+        </label>
         <label>Description<input v-model="newFlagDescription" placeholder="What this flag controls" /></label>
         <label>Release<input v-model="newFlagRelease" placeholder="YYYYMMDD" /></label>
         <label>Enabled
@@ -263,7 +317,12 @@ onMounted(load);
           >{{ newFlagEnabled ? 'Enabled' : 'Disabled' }}</button>
         </label>
       </div>
-      <button class="primary" :disabled="busy || !newFlag.trim()" @click="createFlag">Create</button>
+      <div class="panel-actions">
+        <button class="primary" :disabled="busy || (!editingFlagKey && !newFlag.trim())" @click="submitFlagPanel">
+          {{ editingFlagKey ? 'Update' : 'Create' }}
+        </button>
+        <span v-if="panelMessage" class="panel-msg" :class="{ 'panel-msg-error': panelMessageIsError }">{{ panelMessage }}</span>
+      </div>
     </section>
 
     <!-- flag table -->
@@ -292,9 +351,13 @@ onMounted(load);
                 {{ flag.enabled ? 'enabled' : 'disabled' }}
               </span>
             </td>
-            <td>
+            <td class="actions-cell">
               <button
-                class="btn-configure"
+                class="btn-action"
+                @click="openEditPanel(flag)"
+              >Edit</button>
+              <button
+                class="btn-configure btn-action"
                 :class="{ active: configuringFlagKey === flag.flagKey }"
                 @click="configuringFlagKey === flag.flagKey ? cancelConfigure() : startConfigure(flag.flagKey)"
               >

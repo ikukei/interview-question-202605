@@ -107,6 +107,12 @@ public class FlagService {
         if (request.status() != null) {
             flag.setStatus(request.status());
         }
+        if (request.release() != null) {
+            flag.setReleaseKey(request.release());
+        }
+        if (request.enabled() != null) {
+            flag.setEnabled(request.enabled());
+        }
         flag.touch();
         auditService.record("demo-user", "update", "flag", flag.getFlagKey(), null, request.toString());
         return toFlagResponse(flagRepository.save(flag), null);

@@ -170,7 +170,9 @@ tbody tr.row-active td { background: #f0f7fa; }
 .badge.enabled   { background: #e5f3ec; color: #176a3b; }
 .badge.disabled  { background: #fee2e2; color: #991b1b; }
 
-.btn-configure {
+.actions-cell { display: flex; gap: 6px; align-items: center; }
+
+.btn-action {
   font-size: 13px;
   padding: 5px 12px;
 }
@@ -179,6 +181,18 @@ tbody tr.row-active td { background: #f0f7fa; }
   border-color: #206b82;
   color: #206b82;
 }
+
+/* readonly flag key input in edit mode */
+.input-readonly {
+  background: #f4f6f8;
+  color: #647083;
+  cursor: default;
+}
+
+/* inline message next to Create/Update button */
+.panel-actions { display: flex; align-items: center; gap: 12px; }
+.panel-msg { font-size: 13px; font-weight: 500; color: #176a3b; }
+.panel-msg-error { color: #991b1b; }
 
 .empty-row { text-align: center; color: #9ca3af; padding: 32px; }
 
