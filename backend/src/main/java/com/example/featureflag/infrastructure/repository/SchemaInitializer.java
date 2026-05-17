@@ -29,16 +29,11 @@ public class SchemaInitializer {
         jdbcTemplate.execute("""
                 create table if not exists ff_flag (
                   id number(19) primary key,
-                  flag_key varchar(160) not null,
-                  app_key varchar(120) not null,
-                  environment varchar(40) not null,
-                  name varchar(200) not null,
+                  flag_key varchar(160) not null unique,
                   description varchar(1000),
                   type varchar(40) not null,
-                  default_value clob not null,
-                  enabled number(1) not null,
                   release_key varchar(160),
-                  status varchar(40) not null,
+                  enabled number(1) not null,
                   created_at timestamp not null,
                   updated_at timestamp not null
                 )
@@ -64,19 +59,14 @@ public class SchemaInitializer {
         jdbcTemplate.execute("""
                 create table if not exists ff_rule (
                   id number(19) primary key,
-                  flag_id number(19) not null,
                   config_id number(19),
-                  priority int not null,
                   condition_json clob not null,
                   rollout_percentage int not null,
-                  variation_value clob not null,
-                  enabled number(1) not null,
                   created_at timestamp not null,
                   updated_at timestamp not null
                 )
                 """);
         jdbcTemplate.execute("create sequence if not exists ff_rule_seq start with 1 increment by 1");
-        jdbcTemplate.execute("alter table ff_rule add column if not exists config_id number(19)");
         
         jdbcTemplate.execute("""
                 create table if not exists ff_config_snapshot (

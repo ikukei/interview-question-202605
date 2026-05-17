@@ -7,7 +7,7 @@ public record FeatureContext(
         String subjectKey,
         String region,
         String subject,
-        String release,
+        String releaseKey,
         Map<String, String> attributes
 ) {
     public static Builder builder() {
@@ -18,7 +18,7 @@ public record FeatureContext(
         private String subjectKey;
         private String region;
         private String subject;
-        private String release;
+        private String releaseKey;
         private final Map<String, String> attributes = new LinkedHashMap<>();
 
         public Builder subjectKey(String subjectKey) {
@@ -43,14 +43,14 @@ public record FeatureContext(
             return this;
         }
 
-        public Builder release(String release) {
-            this.release = release;
-            this.attributes.put("release", release);
+        public Builder releaseKey(String releaseKey) {
+            this.releaseKey = releaseKey;
+            this.attributes.put("release", releaseKey);
             return this;
         }
 
         public FeatureContext build() {
-            return new FeatureContext(subjectKey, region, subject, release, Map.copyOf(attributes));
+            return new FeatureContext(subjectKey, region, subject, releaseKey, Map.copyOf(attributes));
         }
     }
 }

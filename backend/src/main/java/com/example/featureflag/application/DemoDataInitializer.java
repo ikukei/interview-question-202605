@@ -22,17 +22,15 @@ public class DemoDataInitializer {
             PublishService publishService
     ) {
         return args -> {
-            String flagKey = "new-checkout";
+            String flagKey = "google-sso";
             String release = LocalDate.now().format(DateTimeFormatter.BASIC_ISO_DATE);
 
             if (flagRepository.findByFlagKey(flagKey).isEmpty()) {
                 flagService.createFlag(new CreateFlagRequest(
                         flagKey,
-                        null,
-                        "Enables the simplified checkout experience for selected demo users.",
+                        "Enables the Google SSO",
                         "boolean",
-                        release,
-                        true
+                        release
                 ));
             }
 

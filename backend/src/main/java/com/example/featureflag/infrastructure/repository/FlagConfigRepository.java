@@ -66,6 +66,7 @@ public class FlagConfigRepository {
         config.setReleaseKey(rs.getString("release_key"));
         config.setRolloutPercentage(rs.getInt("rollout_percentage"));
         config.setStatus(rs.getString("status"));
+        config.setCreatedAt(rs.getTimestamp("created_at").toInstant());
         return config;
     }
 }

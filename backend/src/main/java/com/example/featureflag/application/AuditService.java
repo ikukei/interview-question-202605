@@ -2,6 +2,7 @@ package com.example.featureflag.application;
 
 import com.example.featureflag.domain.AuditLogEntity;
 import com.example.featureflag.infrastructure.repository.AuditLogRepository;
+import java.util.List;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -10,6 +11,10 @@ public class AuditService {
 
     public AuditService(AuditLogRepository auditLogRepository) {
         this.auditLogRepository = auditLogRepository;
+    }
+
+    public List<AuditLogEntity> getAuditHistory(String flagKey) {
+        return auditLogRepository.findByResourceKeyContaining(flagKey);
     }
 
     public void record(String actor, String action, String resourceType, String resourceKey, String beforeJson, String afterJson) {

@@ -4,13 +4,9 @@ import java.time.Instant;
 
 public class RuleEntity {
     private Long id;
-    private Long flagId;
     private Long configId;
-    private int priority = 100;
     private String conditionJson = "{}";
     private int rolloutPercentage = 100;
-    private String variationValue = "true";
-    private boolean enabled = true;
     private Instant createdAt = Instant.now();
     private Instant updatedAt = Instant.now();
 
@@ -22,28 +18,12 @@ public class RuleEntity {
         this.id = id;
     }
 
-    public Long getFlagId() {
-        return flagId;
-    }
-
-    public void setFlagId(Long flagId) {
-        this.flagId = flagId;
-    }
-
     public Long getConfigId() {
         return configId;
     }
 
     public void setConfigId(Long configId) {
         this.configId = configId;
-    }
-
-    public int getPriority() {
-        return priority;
-    }
-
-    public void setPriority(int priority) {
-        this.priority = priority;
     }
 
     public String getConditionJson() {
@@ -62,24 +42,12 @@ public class RuleEntity {
         this.rolloutPercentage = rolloutPercentage;
     }
 
-    public String getVariationValue() {
-        return variationValue;
-    }
-
-    public void setVariationValue(String variationValue) {
-        this.variationValue = variationValue;
-    }
-
-    public boolean isEnabled() {
-        return enabled;
-    }
-
-    public void setEnabled(boolean enabled) {
-        this.enabled = enabled;
-    }
-
     public Instant getCreatedAt() {
         return createdAt;
+    }
+
+    public void setCreatedAt(Instant createdAt) {
+        this.createdAt = createdAt;
     }
 
     public Instant getUpdatedAt() {

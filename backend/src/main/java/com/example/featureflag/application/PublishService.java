@@ -101,9 +101,8 @@ public class PublishService {
     private SnapshotFlag toSnapshotFlag(FlagConfigEntity config) {
         FlagEntity flag = flagRepository.findById(config.getFlagId())
                 .orElseThrow(() -> new NotFoundException("Flag not found: " + config.getFlagId()));
-        List<SnapshotRule> rules = ruleRepository.findByConfigIdOrderByPriorityAsc(config.getId())
+        List<SnapshotRule> rules = ruleRepository.findByConfigId(config.getId())
                 .stream()
-                .filter(RuleEntity::isEnabled)
                 .map(this::toSnapshotRule)
                 .toList();
         return new SnapshotFlag(
@@ -118,7 +117,6 @@ public class PublishService {
     private SnapshotRule toSnapshotRule(RuleEntity rule) {
         return new SnapshotRule(
                 String.valueOf(rule.getId()),
-                rule.getPriority(),
                 readConditionJson(rule.getConditionJson()),
                 rule.getRolloutPercentage()
         );
