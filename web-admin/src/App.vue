@@ -13,6 +13,7 @@ const baseUrl = ref("http://localhost:8080");
 const flagDefinitions = ref<any[]>([]);
 const busy = ref(false);
 const message = ref("");
+const messageIsError = ref(false);
 
 // create panel
 const showCreatePanel = ref(false);
@@ -64,8 +65,23 @@ async function api(path: string, options: RequestInit = {}) {
     ...options,
     headers: { "Content-Type": "application/json", ...(options.headers || {}) }
   });
-  if (!response.ok) throw new Error(await response.text());
+  if (!response.ok) {
+    const text = await response.text();
+    let msg = text;
+    try { msg = JSON.parse(text).error ?? JSON.parse(text).message ?? text; } catch {}
+    throw new Error(msg);
+  }
   return response.json();
+}
+
+function showError(e: unknown) {
+  message.value = String(e instanceof Error ? e.message : e);
+  messageIsError.value = true;
+}
+
+function showInfo(msg: string) {
+  message.value = msg;
+  messageIsError.value = false;
 }
 
 // --- actions ---
@@ -78,14 +94,14 @@ async function load() {
       evalFlagKey.value = flagDefinitions.value[0].flagKey;
     }
   } catch (e) {
-    message.value = String(e);
+    showError(e);
   } finally {
     busy.value = false;
   }
 }
 
 async function createFlag() {
-  if (!newFlag.value.trim()) { message.value = "Please enter a flag key."; return; }
+  if (!newFlag.value.trim()) { showError("Please enter a flag key."); return; }
   busy.value = true;
   message.value = "";
   try {
@@ -93,7 +109,7 @@ async function createFlag() {
       method: "POST",
       body: JSON.stringify({ flag: newFlag.value.trim(), description: newFlagDescription.value.trim(), type: "boolean", release: newFlagRelease.value, enabled: newFlagEnabled.value })
     });
-    message.value = `Flag "${created.flagKey}" created.`;
+    showInfo(`Flag "${created.flagKey}" created.`);
     newFlag.value = "";
     newFlagDescription.value = "";
     newFlagRelease.value = todayRelease();
@@ -102,7 +118,7 @@ async function createFlag() {
     await load();
     startConfigure(created.flagKey);
   } catch (e) {
-    message.value = String(e);
+    showError(e);
   } finally {
     busy.value = false;
   }
@@ -141,11 +157,11 @@ async function configureFlag() {
     evalEnvironment.value = cfgEnvironment.value;
     evalRegion.value = cfgRegions.value[0] || "Asia";
     evalSubject.value = cfgSubject.value;
-    message.value = "Configuration saved. Click Publish to push a snapshot.";
+    showInfo("Configuration saved. Click Publish to push a snapshot.");
     await loadLatestSnapshot();
     await load();
   } catch (e) {
-    message.value = String(e);
+    showError(e);
   } finally {
     busy.value = false;
   }
@@ -159,9 +175,9 @@ async function publish() {
       method: "POST",
       body: JSON.stringify({ appKey: evalApp.value, environment: evalEnvironment.value, actor: "web-admin" })
     });
-    message.value = `Published ${evalApp.value}/${evalEnvironment.value} snapshot v${latestSnapshot.value.version}.`;
+    showInfo(`Published ${evalApp.value}/${evalEnvironment.value} snapshot v${latestSnapshot.value.version}.`);
   } catch (e) {
-    message.value = String(e);
+    showError(e);
   } finally {
     busy.value = false;
   }
@@ -189,14 +205,14 @@ async function runEvaluation() {
       body: JSON.stringify({ appKey: evalApp.value, environment: evalEnvironment.value, context })
     });
   } catch (e) {
-    message.value = String(e);
+    showError(e);
   } finally {
     busy.value = false;
   }
 }
 
 function fakeWorkflow(action: string) {
-  message.value = `${action} is intentionally disabled in this demo. Publish is the real action.`;
+  showInfo(`${action} is intentionally disabled in this demo. Publish is the real action.`);
 }
 
 function adjustRollout(mode: "increase" | "decrease" | "full" | "kill") {
@@ -399,6 +415,6 @@ onMounted(load);
       <p v-else class="empty">Publish a snapshot, then run an evaluation.</p>
     </section>
 
-    <p v-if="message" class="message">{{ message }}</p>
+    <p v-if="message" class="message" :class="{ 'message-error': messageIsError }">{{ message }}</p>
   </main>
 </template>

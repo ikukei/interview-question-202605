@@ -271,7 +271,8 @@ pre {
 }
 
 .empty { color: #9ca3af; margin: 12px 0 0; }
-.message { color: #647083; font-size: 13px; margin: 0; }
+.message { color: #176a3b; font-size: 13px; margin: 0; font-weight: 500; }
+.message-error { color: #991b1b; }
 
 @media (max-width: 900px) {
   .create-grid, .cfg-grid, .eval-grid { grid-template-columns: 1fr 1fr; }
