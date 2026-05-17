@@ -211,21 +211,12 @@ tbody tr.row-active td { background: #f0f7fa; }
 .configure-header h2 { margin: 0; }
 .flag-name { color: #206b82; font-family: monospace; }
 
-/* Row 1 — 4 equal columns */
+/* Row 1 — 3 equal columns */
 .cfg-row1 {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(3, 1fr);
   gap: 14px;
   margin-bottom: 16px;
-}
-.env-display-text {
-  padding: 7px 10px;
-  border: 1px solid #cdd5df;
-  border-radius: 6px;
-  background: #f4f6f8;
-  color: #647083;
-  font-size: 14px;
-  min-height: 36px;
 }
 
 /* Row 2 — Pipeline | Rollout | Condition (3 cols) */
@@ -234,7 +225,7 @@ tbody tr.row-active td { background: #f0f7fa; }
   grid-template-columns: 2fr 1.6fr 1.4fr;
   gap: 20px;
   margin-bottom: 16px;
-  align-items: start;
+  align-items: stretch;
 }
 
 /* Pipeline */
@@ -285,18 +276,22 @@ tbody tr.row-active td { background: #f0f7fa; }
 .rollout-btns { display: flex; gap: 6px; flex-wrap: wrap; }
 .rollout-btns button { padding: 5px 11px; font-size: 12px; }
 
-/* Condition */
-.cfg-condition-col {}
+/* Condition — stretches to fill both sub-rows of the rollout column */
+.cfg-condition-col {
+  display: flex;
+  flex-direction: column;
+}
 .condition-label { font-size: 12px; color: #647083; font-weight: 600; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.04em; }
 .condition-pre {
+  flex: 1;
   margin: 0;
   padding: 10px 12px;
   background: #111827;
   color: #edf2f7;
   border-radius: 6px;
   font-size: 12px;
-  max-height: 160px;
   overflow: auto;
+  min-height: 80px;
 }
 
 .configure-actions {

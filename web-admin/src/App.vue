@@ -413,16 +413,13 @@ onMounted(load);
         <button @click="cancelConfigure">✕</button>
       </div>
 
-      <!-- Row 1: Apps / Regions / Environment display / Subject -->
+      <!-- Row 1: Apps / Regions / Subject -->
       <div class="cfg-row1">
         <label>Apps
           <MultiSelect v-model="cfgApps" :options="appOptions" placeholder="— select apps —" />
         </label>
         <label>Regions
           <MultiSelect v-model="cfgRegions" :options="regionOptions" placeholder="— select regions —" />
-        </label>
-        <label>Environment
-          <div class="env-display-text">{{ cfgEnvs.length ? cfgEnvs.join(', ') : '— none —' }}</div>
         </label>
         <label>Subject
           <select v-model="cfgSubject">
@@ -463,7 +460,7 @@ onMounted(load);
 
         <!-- Condition preview -->
         <div class="cfg-condition-col">
-          <div class="condition-label">Condition preview</div>
+          <div class="condition-label">Condition Preview</div>
           <pre class="condition-pre">{{ conditionPreview }}</pre>
         </div>
       </div>
