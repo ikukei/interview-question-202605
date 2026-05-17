@@ -30,7 +30,7 @@ const envPipeline = ["local", "dev", "sit", "uat", "prod"];
 const configuringFlagKey = ref<string | null>(null);
 const cfgApps = ref(["vue-demo"]);
 const cfgRegions = ref(["Asia"]);
-const cfgSubject = ref("vip");
+const cfgSubject = ref(["vip"]);
 const cfgEnvLevel = ref(-1);          // -1=none, 0=local, 1=local+dev, …, 4=all
 const cfgRollout = ref(100);
 const approved = ref(false);
@@ -238,7 +238,7 @@ async function configureFlag() {
     evalApp.value = cfgApps.value[0] || "vue-demo";
     evalEnvironment.value = cfgEnvs.value[cfgEnvs.value.length - 1] || "local";
     evalRegion.value = cfgRegions.value[0] || "Asia";
-    evalSubject.value = cfgSubject.value;
+    evalSubject.value = cfgSubject.value[0] || "vip";
     showInfo(`Config saved for [${cfgEnvs.value.join(", ")}]. Click Publish to push a snapshot.`);
     await loadLatestSnapshot();
     await load();
@@ -422,9 +422,7 @@ onMounted(load);
           <MultiSelect v-model="cfgRegions" :options="regionOptions" placeholder="— select regions —" />
         </label>
         <label>Subject
-          <select v-model="cfgSubject">
-            <option v-for="s in subjectOptions" :key="s" :value="s">{{ s }}</option>
-          </select>
+          <MultiSelect v-model="cfgSubject" :options="subjectOptions" placeholder="— select subjects —" />
         </label>
       </div>
 
