@@ -12,13 +12,13 @@ import java.util.Set;
 
 public class JavaFeatureDemo {
     private static final DateTimeFormatter FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
-    
+
     public static void main(String[] args) {
         String baseUrl = arg(args, 0, "http://localhost:8080");
         String subjectKey = arg(args, 1, "java-demo-user");
         String region = arg(args, 2, "Asia");
         String subject = arg(args, 3, "vip");
-        String release = arg(args, 4, LocalDate.now().format(DateTimeFormatter.BASIC_ISO_DATE));
+        String releaseKey = arg(args, 4, LocalDate.now().format(DateTimeFormatter.BASIC_ISO_DATE));
         int pollInterval = Integer.parseInt(arg(args, 5, "3"));
 
         FeatureClient client = FeatureClient.builder()
@@ -31,26 +31,26 @@ public class JavaFeatureDemo {
                 .subjectKey(subjectKey)
                 .region(region)
                 .subject(subject)
-                .release(release)
+                .releaseKey(releaseKey)
                 .attribute("platform", "java-cli")
                 .build();
 
         Set<String> knownFlags = new HashSet<>();
-        
+
         System.out.println("=== Java Feature Flag Demo ===");
-        System.out.println("App: java-demo, region: " + region + ", subject: " + subject + ", release: " + release);
+        System.out.println("App: java-demo, region: " + region + ", subject: " + subject + ", releaseKey: " + releaseKey);
         System.out.println("Polling for feature flags every " + pollInterval + " seconds...");
         System.out.println("Press Ctrl+C to exit.\n");
 
         while (true) {
             try {
                 List<String> currentFlags = client.listFlagKeys();
-                
+
                 for (String flagKey : currentFlags) {
                     if (!knownFlags.contains(flagKey)) {
                         System.out.println("\n[" + LocalDateTime.now().format(FORMATTER) + "] NEW FLAG DETECTED: " + flagKey);
                         try {
-                            FeatureEvaluation evaluation = client.evaluate(flagKey, context, "false");
+                            FeatureEvaluation evaluation = client.evaluate(flagKey, context);
                             printEvaluation(evaluation);
                         } catch (Exception e) {
                             System.err.println("  Evaluation failed: " + e.getMessage());
@@ -62,19 +62,19 @@ public class JavaFeatureDemo {
 
                 if (!currentFlags.isEmpty()) {
                     System.out.println("\n[" + LocalDateTime.now().format(FORMATTER) + "] All feature flags (" + currentFlags.size() + "):");
-                    List<FeatureEvaluation> evaluations = client.evaluateAll(context, "false");
+                    List<FeatureEvaluation> evaluations = client.evaluateAll(context);
                     for (FeatureEvaluation eval : evaluations) {
-                        System.out.println("- " + eval.flagKey() + ": " + eval.value() + " (enabled: " + eval.enabled() + ")");
+                        System.out.println("- " + eval.flagKey() + ": " + eval.enabled());
                     }
                 } else {
                     System.out.println("[" + LocalDateTime.now().format(FORMATTER) + "] No feature flags found");
                 }
 
-                Thread.sleep(pollInterval * 1000);
+                Thread.sleep(pollInterval * 1000L);
             } catch (Exception e) {
                 System.err.println("[" + LocalDateTime.now().format(FORMATTER) + "] Error: " + e.getMessage());
                 try {
-                    Thread.sleep(pollInterval * 1000);
+                    Thread.sleep(pollInterval * 1000L);
                 } catch (InterruptedException ie) {
                     Thread.currentThread().interrupt();
                     break;
@@ -85,7 +85,6 @@ public class JavaFeatureDemo {
 
     private static void printEvaluation(FeatureEvaluation evaluation) {
         System.out.println("  Flag Key: " + evaluation.flagKey());
-        System.out.println("  Value: " + evaluation.value());
         System.out.println("  Enabled: " + evaluation.enabled());
         System.out.println("  Reason: " + evaluation.reasonCode());
         System.out.println("  Snapshot Version: " + evaluation.snapshotVersion());

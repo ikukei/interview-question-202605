@@ -32,17 +32,19 @@ public class FeatureClient {
     }
 
     public boolean boolVariation(String flagKey, FeatureContext context, boolean defaultValue) {
-        FeatureEvaluation evaluation = evaluate(flagKey, context, Boolean.toString(defaultValue));
-        return Boolean.parseBoolean(evaluation.value());
+        try {
+            return evaluate(flagKey, context).enabled();
+        } catch (Exception ex) {
+            return defaultValue;
+        }
     }
 
-    public FeatureEvaluation evaluate(String flagKey, FeatureContext context, String defaultValue) {
+    public FeatureEvaluation evaluate(String flagKey, FeatureContext context) {
         try {
             Map<String, Object> body = Map.of(
                     "appKey", appKey,
                     "environment", environment,
-                    "context", contextBody(context),
-                    "defaultValue", defaultValue
+                    "context", contextBody(context)
             );
             String json = objectMapper.writeValueAsString(body);
             HttpRequest request = HttpRequest.newBuilder()
@@ -79,18 +81,15 @@ public class FeatureClient {
         }
     }
 
-    public List<FeatureEvaluation> evaluateAll(FeatureContext context, String defaultValue) {
+    public List<FeatureEvaluation> evaluateAll(FeatureContext context) {
         try {
             List<String> flagKeys = listFlagKeys();
-            if (flagKeys.isEmpty()) {
-                return List.of();
-            }
+            if (flagKeys.isEmpty()) return List.of();
             Map<String, Object> body = Map.of(
                     "appKey", appKey,
                     "environment", environment,
                     "flagKeys", flagKeys,
-                    "context", contextBody(context),
-                    "defaultValue", defaultValue
+                    "context", contextBody(context)
             );
             String json = objectMapper.writeValueAsString(body);
             HttpRequest request = HttpRequest.newBuilder()
@@ -103,7 +102,7 @@ public class FeatureClient {
             if (response.statusCode() < 200 || response.statusCode() >= 300) {
                 throw new FeatureClientException("Batch evaluation failed with HTTP " + response.statusCode() + ": " + response.body());
             }
-            return objectMapper.readValue(response.body(), 
+            return objectMapper.readValue(response.body(),
                     objectMapper.getTypeFactory().constructCollectionType(List.class, FeatureEvaluation.class));
         } catch (Exception ex) {
             throw new FeatureClientException("Unable to evaluate all feature flags", ex);
@@ -111,10 +110,7 @@ public class FeatureClient {
     }
 
     private static String stripTrailingSlash(String value) {
-        if (value.endsWith("/")) {
-            return value.substring(0, value.length() - 1);
-        }
-        return value;
+        return value.endsWith("/") ? value.substring(0, value.length() - 1) : value;
     }
 
     private Map<String, Object> contextBody(FeatureContext context) {
@@ -122,7 +118,7 @@ public class FeatureClient {
         body.put("subjectKey", context.subjectKey());
         body.put("region", context.region());
         body.put("subject", context.subject());
-        body.put("release", context.release());
+        body.put("releaseKey", context.releaseKey());
         body.put("attributes", context.attributes());
         return body;
     }

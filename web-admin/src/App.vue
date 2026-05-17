@@ -178,7 +178,7 @@ async function submitFlagPanel() {
     try {
       const created = await api("/api/v1/flags", {
         method: "POST",
-        body: JSON.stringify({ flag: newFlag.value.trim(), description: newFlagDescription.value.trim(), type: "boolean", release: newFlagRelease.value, enabled: newFlagEnabled.value })
+        body: JSON.stringify({ flagKey: newFlag.value.trim(), description: newFlagDescription.value.trim(), type: "boolean", release: newFlagRelease.value })
       });
       closePanel();
       await load();
@@ -339,7 +339,7 @@ onMounted(load);
         </label>
         <label>Description<input v-model="newFlagDescription" placeholder="What this flag controls" /></label>
         <label>Release<input v-model="newFlagRelease" placeholder="YYYYMMDD" /></label>
-        <label>Enabled
+        <label v-if="editingFlagKey">Enabled
           <button
             type="button"
             class="toggle-btn"

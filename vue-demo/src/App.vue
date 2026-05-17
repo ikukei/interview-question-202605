@@ -32,14 +32,13 @@ async function loadFeatures() {
       subjectKey: subjectKey.value,
       region: region.value,
       subject: subject.value,
-      release: release.value,
       attributes: {
         region: region.value,
         subject: subject.value,
         release: release.value,
         platform: "vue-demo"
       }
-    }, "false");
+    });
   } catch (err) {
     error.value = String(err);
   } finally {
@@ -73,10 +72,10 @@ onMounted(loadFeatures);
         <p>No feature flags found</p>
       </div>
 
-      <div v-for="item in evaluations" :key="item.flagKey" class="flag-card" :class="{ enabled: item.value === 'true' }">
+      <div v-for="item in evaluations" :key="item.flagKey" class="flag-card" :class="{ enabled: item.enabled }">
         <div class="flag-header">
           <span class="flag-key">{{ item.flagKey }}</span>
-          <span class="flag-value">{{ item.value }}</span>
+          <span class="flag-value">{{ item.enabled ? 'on' : 'off' }}</span>
         </div>
         <dl>
           <div><dt>Enabled</dt><dd>{{ item.enabled ? "Yes" : "No" }}</dd></div>
