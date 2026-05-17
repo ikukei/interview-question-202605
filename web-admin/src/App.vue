@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from "vue";
+import MultiSelect from "./MultiSelect.vue";
 
 const appOptions = ["vue-demo", "java-demo", "python-demo", "go-demo"];
 const regionOptions = ["Asia", "Europe", "North America", "South America", "Africa"];
@@ -296,14 +297,10 @@ onMounted(load);
 
       <div class="cfg-grid">
         <label>Apps
-          <select v-model="cfgApps" multiple>
-            <option v-for="app in appOptions" :key="app" :value="app">{{ app }}</option>
-          </select>
+          <MultiSelect v-model="cfgApps" :options="appOptions" placeholder="— select apps —" />
         </label>
         <label>Regions
-          <select v-model="cfgRegions" multiple>
-            <option v-for="r in regionOptions" :key="r" :value="r">{{ r }}</option>
-          </select>
+          <MultiSelect v-model="cfgRegions" :options="regionOptions" placeholder="— select regions —" />
         </label>
         <div class="cfg-col">
           <label>Environment
