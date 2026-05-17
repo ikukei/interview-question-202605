@@ -46,7 +46,7 @@ async function openAudit(flagKey: string) {
   auditLogs.value = [];
   auditLoading.value = true;
   try {
-    auditLogs.value = await api(`/api/v1/audit?flagKey=${encodeURIComponent(flagKey)}`);
+    auditLogs.value = await api(`/api/v1/flags/${encodeURIComponent(flagKey)}/audit`);
   } catch (e) {
     auditLogs.value = [];
   } finally {
