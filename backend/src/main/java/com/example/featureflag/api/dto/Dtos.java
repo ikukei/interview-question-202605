@@ -22,7 +22,9 @@ public final class Dtos {
             String flag,
             String flagKey,
             String description,
-            String type
+            String type,
+            String release,
+            Boolean enabled
     ) {
     }
 
@@ -56,8 +58,6 @@ public final class Dtos {
             String environment,
             List<String> regions,
             String subject,
-            String release,
-            String releaseKey,
             Boolean enabled,
             Integer rolloutPercentage,
             String conditionJson

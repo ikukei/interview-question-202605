@@ -139,8 +139,22 @@ tbody tr:last-child td { border-bottom: none; }
 tbody tr:hover td { background: #fafbfd; }
 tbody tr.row-active td { background: #f0f7fa; }
 
-.flag-key { font-weight: 600; color: #1d2433; font-family: monospace; font-size: 13px; }
-.flag-desc { color: #647083; font-size: 13px; max-width: 300px; }
+.flag-key     { font-weight: 600; color: #1d2433; font-family: monospace; font-size: 13px; }
+.flag-desc    { color: #647083; font-size: 13px; max-width: 300px; }
+.flag-release { font-family: monospace; font-size: 13px; color: #647083; }
+
+/* toggle button (enabled/disabled in create panel) */
+.toggle-btn {
+  padding: 7px 18px;
+  border-radius: 20px;
+  font-weight: 600;
+  font-size: 13px;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+}
+.toggle-on  { background: #e5f3ec; border-color: #10b981; color: #176a3b; }
+.toggle-on:hover  { background: #d1fae5; }
+.toggle-off { background: #fee2e2; border-color: #fca5a5; color: #991b1b; }
+.toggle-off:hover { background: #fecaca; }
 
 .badge {
   display: inline-flex;
@@ -151,8 +165,10 @@ tbody tr.row-active td { background: #f0f7fa; }
   background: #e5f3ec;
   color: #176a3b;
 }
-.badge.archived { background: #f3f4f6; color: #6b7280; }
+.badge.archived  { background: #f3f4f6; color: #6b7280; }
 .badge.draft     { background: #fef3c7; color: #92400e; }
+.badge.enabled   { background: #e5f3ec; color: #176a3b; }
+.badge.disabled  { background: #fee2e2; color: #991b1b; }
 
 .btn-configure {
   font-size: 13px;

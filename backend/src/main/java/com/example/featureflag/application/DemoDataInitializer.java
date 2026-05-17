@@ -30,7 +30,9 @@ public class DemoDataInitializer {
                         flagKey,
                         null,
                         "Enables the simplified checkout experience for selected demo users.",
-                        "boolean"
+                        "boolean",
+                        release,
+                        true
                 ));
             }
 
@@ -39,8 +41,6 @@ public class DemoDataInitializer {
                     "local",
                     List.of("Asia", "North America"),
                     "vip",
-                    release,
-                    null,
                     true,
                     100,
                     null

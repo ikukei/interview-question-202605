@@ -78,6 +78,8 @@ public class FlagService {
         flag.setName(flagKey);
         flag.setDescription(blankToDefault(request.description(), "No description"));
         flag.setType(blankToDefault(request.type(), "boolean"));
+        flag.setReleaseKey(request.release());
+        flag.setEnabled(request.enabled() == null || request.enabled());
         FlagEntity saved = flagRepository.save(flag);
         auditService.record("demo-user", "create", "flag", saved.getFlagKey(), null, request.toString());
         return toFlagResponse(saved, null);
@@ -163,7 +165,7 @@ public class FlagService {
                 });
 
         config.setEnabled(request.enabled() == null || request.enabled());
-        config.setReleaseKey(firstNonBlank(request.release(), request.releaseKey()));
+        config.setReleaseKey(flag.getReleaseKey());
         config.setRolloutPercentage(clampRollout(request.rolloutPercentage()));
         config.setStatus("active");
         config.touch();
@@ -249,10 +251,6 @@ public class FlagService {
         }
         if (!isBlank(request.subject())) {
             condition.put("subject", request.subject());
-        }
-        String release = firstNonBlank(request.release(), request.releaseKey());
-        if (!isBlank(release)) {
-            condition.put("release", release);
         }
         return writeJson(condition);
     }

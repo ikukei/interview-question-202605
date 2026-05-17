@@ -18,6 +18,8 @@ const message = ref("");
 const showCreatePanel = ref(false);
 const newFlag = ref("");
 const newFlagDescription = ref("");
+const newFlagRelease = ref(todayRelease());
+const newFlagEnabled = ref(true);
 
 // configure panel
 const configuringFlagKey = ref<string | null>(null);
@@ -25,7 +27,6 @@ const cfgApps = ref(["vue-demo"]);
 const cfgEnvironment = ref("local");
 const cfgRegions = ref(["Asia"]);
 const cfgSubject = ref("vip");
-const cfgRelease = ref(todayRelease());
 const cfgEnabled = ref(true);
 const cfgRollout = ref(100);
 const latestSnapshot = ref<any | null>(null);
@@ -37,21 +38,12 @@ const evalFlagKey = ref("");
 const evalSubjectKey = ref("demo-user-001");
 const evalRegion = ref("Asia");
 const evalSubject = ref("vip");
-const evalRelease = ref(todayRelease());
 const evaluation = ref<any | null>(null);
 const explain = ref<any | null>(null);
 
 // --- computed ---
-const releaseOptions = computed(() =>
-  Array.from({ length: 7 }, (_, i) => {
-    const d = new Date();
-    d.setDate(d.getDate() + i);
-    return formatRelease(d);
-  })
-);
-
 const conditionPreview = computed(() =>
-  JSON.stringify({ region: cfgRegions.value, subject: cfgSubject.value, release: cfgRelease.value }, null, 2)
+  JSON.stringify({ region: cfgRegions.value, subject: cfgSubject.value }, null, 2)
 );
 
 const configuringFlag = computed(() =>
@@ -99,11 +91,13 @@ async function createFlag() {
   try {
     const created = await api("/api/v1/flags", {
       method: "POST",
-      body: JSON.stringify({ flag: newFlag.value.trim(), description: newFlagDescription.value.trim(), type: "boolean" })
+      body: JSON.stringify({ flag: newFlag.value.trim(), description: newFlagDescription.value.trim(), type: "boolean", release: newFlagRelease.value, enabled: newFlagEnabled.value })
     });
     message.value = `Flag "${created.flagKey}" created.`;
     newFlag.value = "";
     newFlagDescription.value = "";
+    newFlagRelease.value = todayRelease();
+    newFlagEnabled.value = true;
     showCreatePanel.value = false;
     await load();
     startConfigure(created.flagKey);
@@ -138,7 +132,6 @@ async function configureFlag() {
         environment: cfgEnvironment.value,
         regions: cfgRegions.value,
         subject: cfgSubject.value,
-        release: cfgRelease.value,
         enabled: cfgEnabled.value,
         rolloutPercentage: cfgRollout.value,
         conditionJson: conditionPreview.value
@@ -148,7 +141,6 @@ async function configureFlag() {
     evalEnvironment.value = cfgEnvironment.value;
     evalRegion.value = cfgRegions.value[0] || "Asia";
     evalSubject.value = cfgSubject.value;
-    evalRelease.value = cfgRelease.value;
     message.value = "Configuration saved. Click Publish to push a snapshot.";
     await loadLatestSnapshot();
     await load();
@@ -187,7 +179,7 @@ async function runEvaluation() {
   busy.value = true;
   message.value = "";
   try {
-    const context = { subjectKey: evalSubjectKey.value, region: evalRegion.value, subject: evalSubject.value, release: evalRelease.value };
+    const context = { subjectKey: evalSubjectKey.value, region: evalRegion.value, subject: evalSubject.value };
     evaluation.value = await api(`/api/v1/evaluations/flags/${encodeURIComponent(evalFlagKey.value)}`, {
       method: "POST",
       body: JSON.stringify({ appKey: evalApp.value, environment: evalEnvironment.value, context })
@@ -245,6 +237,15 @@ onMounted(load);
       <div class="create-grid">
         <label>Flag key<input v-model="newFlag" placeholder="e.g. new-checkout" /></label>
         <label>Description<input v-model="newFlagDescription" placeholder="What this flag controls" /></label>
+        <label>Release<input v-model="newFlagRelease" placeholder="YYYYMMDD" /></label>
+        <label>Enabled
+          <button
+            type="button"
+            class="toggle-btn"
+            :class="newFlagEnabled ? 'toggle-on' : 'toggle-off'"
+            @click="newFlagEnabled = !newFlagEnabled"
+          >{{ newFlagEnabled ? 'Enabled' : 'Disabled' }}</button>
+        </label>
       </div>
       <button class="primary" :disabled="busy || !newFlag.trim()" @click="createFlag">Create</button>
     </section>
@@ -256,8 +257,8 @@ onMounted(load);
           <tr>
             <th>Flag</th>
             <th>Description</th>
-            <th>Type</th>
-            <th>Status</th>
+            <th>Release</th>
+            <th>Enabled</th>
             <th>Actions</th>
           </tr>
         </thead>
@@ -269,8 +270,12 @@ onMounted(load);
           >
             <td class="flag-key">{{ flag.flagKey }}</td>
             <td class="flag-desc">{{ flag.description }}</td>
-            <td>{{ flag.type }}</td>
-            <td><span class="badge" :class="flag.status">{{ flag.status }}</span></td>
+            <td class="flag-release">{{ flag.releaseKey || '—' }}</td>
+            <td>
+              <span class="badge" :class="flag.enabled ? 'enabled' : 'disabled'">
+                {{ flag.enabled ? 'enabled' : 'disabled' }}
+              </span>
+            </td>
             <td>
               <button
                 class="btn-configure"
@@ -312,14 +317,6 @@ onMounted(load);
             <select v-model="cfgSubject">
               <option v-for="s in subjectOptions" :key="s" :value="s">{{ s }}</option>
             </select>
-          </label>
-          <label>Release
-            <div class="inline-row">
-              <input v-model="cfgRelease" />
-              <select v-model="cfgRelease">
-                <option v-for="r in releaseOptions" :key="r" :value="r">{{ r }}</option>
-              </select>
-            </div>
           </label>
           <label>Enabled
             <div class="inline-row">
@@ -390,11 +387,6 @@ onMounted(load);
         <label>Subject
           <select v-model="evalSubject">
             <option v-for="s in subjectOptions" :key="s" :value="s">{{ s }}</option>
-          </select>
-        </label>
-        <label>Release
-          <select v-model="evalRelease">
-            <option v-for="r in releaseOptions" :key="r" :value="r">{{ r }}</option>
           </select>
         </label>
       </div>
