@@ -38,7 +38,7 @@ public class DemoDataInitializer {
                     List.of("vue-demo", "java-demo", "python-demo"),
                     "local",
                     List.of("Asia", "North America"),
-                    "vip",
+                    List.of("vip"),
                     true,
                     100,
                     null

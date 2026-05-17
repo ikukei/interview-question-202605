@@ -55,7 +55,7 @@ public final class Dtos {
             List<String> appKeys,
             String environment,
             List<String> regions,
-            String subject,
+            List<String> subjects,
             Boolean enabled,
             Integer rolloutPercentage,
             String conditionJson

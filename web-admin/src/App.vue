@@ -228,7 +228,7 @@ async function configureFlag() {
           appKeys: cfgApps.value,
           environment: env,
           regions: cfgRegions.value,
-          subject: cfgSubject.value,
+          subjects: cfgSubject.value,
           enabled: true,
           rolloutPercentage: cfgRollout.value,
           conditionJson: conditionPreview.value

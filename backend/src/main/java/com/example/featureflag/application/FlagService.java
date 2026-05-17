@@ -241,8 +241,8 @@ public class FlagService {
         if (request.regions() != null && !request.regions().isEmpty()) {
             condition.put("region", request.regions());
         }
-        if (!isBlank(request.subject())) {
-            condition.put("subject", request.subject());
+        if (request.subjects() != null && !request.subjects().isEmpty()) {
+            condition.put("subject", request.subjects());
         }
         return writeJson(condition);
     }
