@@ -20,7 +20,6 @@ public final class SnapshotModels {
             String flagKey,
             String type,
             boolean enabled,
-            String value,
             String releaseKey,
             List<SnapshotRule> rules
     ) {
@@ -30,8 +29,7 @@ public final class SnapshotModels {
             String ruleId,
             int priority,
             Map<String, Object> conditionJson,
-            int rolloutPercentage,
-            String variationValue
+            int rolloutPercentage
     ) {
     }
 }

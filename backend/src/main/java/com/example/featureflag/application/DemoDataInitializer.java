@@ -30,8 +30,7 @@ public class DemoDataInitializer {
                         flagKey,
                         null,
                         "Enables the simplified checkout experience for selected demo users.",
-                        "boolean",
-                        "true"
+                        "boolean"
                 ));
             }
 
@@ -42,7 +41,6 @@ public class DemoDataInitializer {
                     "vip",
                     release,
                     null,
-                    "true",
                     true,
                     100,
                     null

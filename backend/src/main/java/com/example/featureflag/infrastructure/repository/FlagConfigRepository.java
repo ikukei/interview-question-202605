@@ -33,11 +33,11 @@ public class FlagConfigRepository {
     private FlagConfigEntity insert(FlagConfigEntity config) {
         long nextId = jdbcTemplate.queryForObject("select ff_flag_config_seq.nextval from dual", Long.class);
         String sql = """
-                insert into ff_flag_config(id, flag_id, app_key, environment, flag_value, enabled, release_key, rollout_percentage, status, created_at, updated_at)
-                values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                insert into ff_flag_config(id, flag_id, app_key, environment, enabled, release_key, rollout_percentage, status, created_at, updated_at)
+                values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """;
         jdbcTemplate.update(sql, nextId, config.getFlagId(), config.getAppKey(), config.getEnvironment(),
-                config.getValue(), config.isEnabled() ? 1 : 0, config.getReleaseKey(),
+                config.isEnabled() ? 1 : 0, config.getReleaseKey(),
                 config.getRolloutPercentage(), config.getStatus(),
                 Timestamp.from(config.getCreatedAt()), Timestamp.from(config.getUpdatedAt()));
         config.setId(nextId);
@@ -46,11 +46,11 @@ public class FlagConfigRepository {
 
     private FlagConfigEntity update(FlagConfigEntity config) {
         String sql = """
-                update ff_flag_config set flag_id = ?, app_key = ?, environment = ?, flag_value = ?, enabled = ?,
+                update ff_flag_config set flag_id = ?, app_key = ?, environment = ?, enabled = ?,
                   release_key = ?, rollout_percentage = ?, status = ?, updated_at = ? where id = ?
                 """;
         jdbcTemplate.update(sql, config.getFlagId(), config.getAppKey(), config.getEnvironment(),
-                config.getValue(), config.isEnabled() ? 1 : 0, config.getReleaseKey(),
+                config.isEnabled() ? 1 : 0, config.getReleaseKey(),
                 config.getRolloutPercentage(), config.getStatus(),
                 Timestamp.from(config.getUpdatedAt()), config.getId());
         return config;
@@ -62,7 +62,6 @@ public class FlagConfigRepository {
         config.setFlagId(rs.getLong("flag_id"));
         config.setAppKey(rs.getString("app_key"));
         config.setEnvironment(rs.getString("environment"));
-        config.setValue(rs.getString("flag_value"));
         config.setEnabled(rs.getInt("enabled") == 1);
         config.setReleaseKey(rs.getString("release_key"));
         config.setRolloutPercentage(rs.getInt("rollout_percentage"));

@@ -16,20 +16,19 @@ import org.springframework.stereotype.Component;
 
 @Component
 public class EvaluationEngine {
-    public EvaluationDecision evaluate(Snapshot snapshot, String flagKey, EvaluationContext context, String callerDefaultValue) {
+    public EvaluationDecision evaluate(Snapshot snapshot, String flagKey, EvaluationContext context) {
         EvaluationContext safeContext = context == null ? new EvaluationContext("anonymous", null, null, null, null, null, Map.of()) : context;
-        String fallback = callerDefaultValue == null ? "false" : callerDefaultValue;
         Optional<SnapshotFlag> maybeFlag = snapshot.flags().stream()
                 .filter(flag -> flag.flagKey().equals(flagKey))
                 .findFirst();
 
         if (maybeFlag.isEmpty()) {
-            return EvaluationDecision.defaulted(flagKey, fallback, "FLAG_NOT_FOUND", snapshot, safeContext);
+            return EvaluationDecision.of(flagKey, false, "FLAG_NOT_FOUND", snapshot, safeContext, null, List.of(), null, null);
         }
 
         SnapshotFlag flag = maybeFlag.get();
         if (!flag.enabled()) {
-            return EvaluationDecision.forFlag(flag, fallback, "FLAG_DISABLED", snapshot, safeContext);
+            return EvaluationDecision.of(flag.flagKey(), false, "FLAG_DISABLED", snapshot, safeContext, null, List.of(), null, flag.releaseKey());
         }
 
         for (SnapshotRule rule : flag.rules()) {
@@ -37,13 +36,13 @@ public class EvaluationEngine {
             if (matches(rule, safeContext, matchedConditions)) {
                 int bucket = rolloutBucket(flag.flagKey(), safeContext.subjectKey());
                 if (bucket < rule.rolloutPercentage()) {
-                    return EvaluationDecision.matched(flag, rule, rule.variationValue(), snapshot, safeContext, matchedConditions, bucket);
+                    return EvaluationDecision.of(flag.flagKey(), true, "RULE_MATCH", snapshot, safeContext, rule.ruleId(), matchedConditions, bucket, flag.releaseKey());
                 }
-                return EvaluationDecision.ruleSkipped(flag, rule, fallback, snapshot, safeContext, matchedConditions, bucket);
+                return EvaluationDecision.of(flag.flagKey(), false, "ROLLOUT_NOT_INCLUDED", snapshot, safeContext, rule.ruleId(), matchedConditions, bucket, flag.releaseKey());
             }
         }
 
-        return EvaluationDecision.forFlag(flag, fallback, "DEFAULT_VALUE", snapshot, safeContext);
+        return EvaluationDecision.of(flag.flagKey(), false, "DEFAULT_VALUE", snapshot, safeContext, null, List.of(), null, flag.releaseKey());
     }
 
     private boolean matches(SnapshotRule rule, EvaluationContext context, List<String> matchedConditions) {
@@ -117,7 +116,7 @@ public class EvaluationEngine {
 
     public record EvaluationDecision(
             String flagKey,
-            String finalValue,
+            boolean enabled,
             String reasonCode,
             String appKey,
             String environment,
@@ -125,94 +124,32 @@ public class EvaluationEngine {
             String matchedRuleId,
             List<String> matchedConditions,
             Integer rolloutBucket,
-            Integer rolloutPercentage,
             String releaseKey,
             long snapshotVersion,
             Instant evaluatedAt
     ) {
-        static EvaluationDecision defaulted(String flagKey, String value, String reasonCode, Snapshot snapshot, EvaluationContext context) {
+        static EvaluationDecision of(
+                String flagKey,
+                boolean enabled,
+                String reasonCode,
+                Snapshot snapshot,
+                EvaluationContext context,
+                String matchedRuleId,
+                List<String> matchedConditions,
+                Integer rolloutBucket,
+                String releaseKey
+        ) {
             return new EvaluationDecision(
                     flagKey,
-                    value,
+                    enabled,
                     reasonCode,
                     snapshot.appKey(),
                     snapshot.environment(),
                     sha256(context.subjectKey()),
-                    null,
-                    List.of(),
-                    null,
-                    null,
-                    null,
-                    snapshot.version(),
-                    Instant.now()
-            );
-        }
-
-        static EvaluationDecision forFlag(SnapshotFlag flag, String value, String reasonCode, Snapshot snapshot, EvaluationContext context) {
-            return new EvaluationDecision(
-                    flag.flagKey(),
-                    value,
-                    reasonCode,
-                    snapshot.appKey(),
-                    snapshot.environment(),
-                    sha256(context.subjectKey()),
-                    null,
-                    List.of(),
-                    null,
-                    null,
-                    flag.releaseKey(),
-                    snapshot.version(),
-                    Instant.now()
-            );
-        }
-
-        static EvaluationDecision matched(
-                SnapshotFlag flag,
-                SnapshotRule rule,
-                String value,
-                Snapshot snapshot,
-                EvaluationContext context,
-                List<String> matchedConditions,
-                int bucket
-        ) {
-            return new EvaluationDecision(
-                    flag.flagKey(),
-                    value,
-                    "RULE_MATCH",
-                    snapshot.appKey(),
-                    snapshot.environment(),
-                    sha256(context.subjectKey()),
-                    rule.ruleId(),
+                    matchedRuleId,
                     List.copyOf(matchedConditions),
-                    bucket,
-                    rule.rolloutPercentage(),
-                    flag.releaseKey(),
-                    snapshot.version(),
-                    Instant.now()
-            );
-        }
-
-        static EvaluationDecision ruleSkipped(
-                SnapshotFlag flag,
-                SnapshotRule rule,
-                String value,
-                Snapshot snapshot,
-                EvaluationContext context,
-                List<String> matchedConditions,
-                int bucket
-        ) {
-            return new EvaluationDecision(
-                    flag.flagKey(),
-                    value,
-                    "ROLLOUT_NOT_INCLUDED",
-                    snapshot.appKey(),
-                    snapshot.environment(),
-                    sha256(context.subjectKey()),
-                    rule.ruleId(),
-                    List.copyOf(matchedConditions),
-                    bucket,
-                    rule.rolloutPercentage(),
-                    flag.releaseKey(),
+                    rolloutBucket,
+                    releaseKey,
                     snapshot.version(),
                     Instant.now()
             );

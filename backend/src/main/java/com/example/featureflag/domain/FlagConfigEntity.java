@@ -7,7 +7,6 @@ public class FlagConfigEntity {
     private Long flagId;
     private String appKey;
     private String environment = "local";
-    private String value = "false";
     private boolean enabled = true;
     private String releaseKey;
     private int rolloutPercentage = 100;
@@ -45,14 +44,6 @@ public class FlagConfigEntity {
 
     public void setEnvironment(String environment) {
         this.environment = environment;
-    }
-
-    public String getValue() {
-        return value;
-    }
-
-    public void setValue(String value) {
-        this.value = value;
     }
 
     public boolean isEnabled() {

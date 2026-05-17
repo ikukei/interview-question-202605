@@ -77,8 +77,7 @@ public class FlagService {
         flag.setFlagKey(flagKey);
         flag.setName(flagKey);
         flag.setDescription(blankToDefault(request.description(), "No description"));
-        flag.setType(blankToDefault(request.type(), "text"));
-        flag.setDefaultValue(blankToDefault(request.value(), "false"));
+        flag.setType(blankToDefault(request.type(), "boolean"));
         FlagEntity saved = flagRepository.save(flag);
         auditService.record("demo-user", "create", "flag", saved.getFlagKey(), null, request.toString());
         return toFlagResponse(saved, null);
@@ -134,7 +133,6 @@ public class FlagService {
         rule.setPriority(request.priority());
         rule.setConditionJson(firstNonBlank(request.conditionJson(), writeJson(request.conditions() == null ? List.of() : request.conditions())));
         rule.setRolloutPercentage(request.rolloutPercentage());
-        rule.setVariationValue(blankToDefault(request.variationValue(), config.getValue()));
         rule.setEnabled(request.enabled() == null || request.enabled());
         RuleEntity saved = ruleRepository.save(rule);
         auditService.record("demo-user", "create", "rule", scopedKey(config, flag), null, request.toString());
@@ -164,7 +162,6 @@ public class FlagService {
                     return created;
                 });
 
-        config.setValue(blankToDefault(request.value(), flag.getDefaultValue()));
         config.setEnabled(request.enabled() == null || request.enabled());
         config.setReleaseKey(firstNonBlank(request.release(), request.releaseKey()));
         config.setRolloutPercentage(clampRollout(request.rolloutPercentage()));
@@ -178,7 +175,6 @@ public class FlagService {
         rule.setPriority(1);
         rule.setConditionJson(buildConditionJson(request));
         rule.setRolloutPercentage(savedConfig.getRolloutPercentage());
-        rule.setVariationValue(savedConfig.getValue());
         rule.setEnabled(true);
         ruleRepository.saveConfigRule(rule);
 
@@ -223,7 +219,6 @@ public class FlagService {
                 config == null ? null : config.getEnvironment(),
                 flag.getDescription(),
                 flag.getType(),
-                config == null ? flag.getDefaultValue() : config.getValue(),
                 config == null || config.isEnabled(),
                 config == null ? null : config.getReleaseKey(),
                 config == null ? flag.getStatus() : config.getStatus(),
@@ -240,7 +235,6 @@ public class FlagService {
                 List.of(),
                 rule.getConditionJson(),
                 rule.getRolloutPercentage(),
-                rule.getVariationValue(),
                 rule.isEnabled()
         );
     }

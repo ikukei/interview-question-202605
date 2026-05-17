@@ -51,7 +51,6 @@ public class SchemaInitializer {
                   flag_id number(19) not null,
                   app_key varchar(120) not null,
                   environment varchar(40) not null,
-                  flag_value clob not null,
                   enabled number(1) not null,
                   release_key varchar(160),
                   rollout_percentage int not null,

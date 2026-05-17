@@ -27,7 +27,7 @@ public class EvaluationService {
     public List<EvaluationResponse> evaluateBatch(BatchEvaluationRequest request) {
         Snapshot snapshot = publishService.loadLatestSnapshot(request.appKey(), request.environment());
         return request.flagKeys().stream()
-                .map(flagKey -> evaluationEngine.evaluate(snapshot, flagKey, request.context(), request.defaultValue()))
+                .map(flagKey -> evaluationEngine.evaluate(snapshot, flagKey, request.context()))
                 .map(this::toEvaluationResponse)
                 .toList();
     }
@@ -36,7 +36,7 @@ public class EvaluationService {
         EvaluationDecision decision = decide(flagKey, request);
         return new ExplainResponse(
                 decision.flagKey(),
-                decision.finalValue(),
+                decision.enabled(),
                 decision.reasonCode(),
                 decision.appKey(),
                 decision.environment(),
@@ -44,7 +44,6 @@ public class EvaluationService {
                 decision.matchedRuleId(),
                 decision.matchedConditions(),
                 decision.rolloutBucket(),
-                decision.rolloutPercentage(),
                 decision.releaseKey(),
                 decision.snapshotVersion(),
                 decision.evaluatedAt()
@@ -53,14 +52,13 @@ public class EvaluationService {
 
     private EvaluationDecision decide(String flagKey, EvaluationRequest request) {
         Snapshot snapshot = publishService.loadLatestSnapshot(request.appKey(), request.environment());
-        return evaluationEngine.evaluate(snapshot, flagKey, request.context(), request.defaultValue());
+        return evaluationEngine.evaluate(snapshot, flagKey, request.context());
     }
 
     private EvaluationResponse toEvaluationResponse(EvaluationDecision decision) {
         return new EvaluationResponse(
                 decision.flagKey(),
-                Boolean.parseBoolean(decision.finalValue()),
-                decision.finalValue(),
+                decision.enabled(),
                 decision.reasonCode(),
                 decision.matchedRuleId(),
                 decision.snapshotVersion(),

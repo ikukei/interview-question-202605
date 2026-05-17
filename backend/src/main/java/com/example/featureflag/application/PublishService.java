@@ -110,7 +110,6 @@ public class PublishService {
                 flag.getFlagKey(),
                 flag.getType(),
                 config.isEnabled(),
-                config.getValue(),
                 config.getReleaseKey(),
                 rules
         );
@@ -121,8 +120,7 @@ public class PublishService {
                 String.valueOf(rule.getId()),
                 rule.getPriority(),
                 readConditionJson(rule.getConditionJson()),
-                rule.getRolloutPercentage(),
-                rule.getVariationValue()
+                rule.getRolloutPercentage()
         );
     }
 

@@ -22,8 +22,7 @@ public final class Dtos {
             String flag,
             String flagKey,
             String description,
-            String type,
-            String value
+            String type
     ) {
     }
 
@@ -43,7 +42,6 @@ public final class Dtos {
             String environment,
             String description,
             String type,
-            String value,
             boolean enabled,
             String releaseKey,
             String status,
@@ -60,7 +58,6 @@ public final class Dtos {
             String subject,
             String release,
             String releaseKey,
-            String value,
             Boolean enabled,
             Integer rolloutPercentage,
             String conditionJson
@@ -74,7 +71,6 @@ public final class Dtos {
             List<ConditionRequest> conditions,
             String conditionJson,
             int rolloutPercentage,
-            String variationValue,
             Boolean enabled
     ) {
     }
@@ -92,7 +88,6 @@ public final class Dtos {
             List<ConditionRequest> conditions,
             String conditionJson,
             int rolloutPercentage,
-            String variationValue,
             boolean enabled
     ) {
     }
@@ -127,8 +122,7 @@ public final class Dtos {
     public record EvaluationRequest(
             String appKey,
             String environment,
-            EvaluationContext context,
-            String defaultValue
+            EvaluationContext context
     ) {
     }
 
@@ -136,15 +130,13 @@ public final class Dtos {
             String appKey,
             String environment,
             List<String> flagKeys,
-            EvaluationContext context,
-            String defaultValue
+            EvaluationContext context
     ) {
     }
 
     public record EvaluationResponse(
             String flagKey,
             boolean enabled,
-            String value,
             String reasonCode,
             String matchedRuleId,
             long snapshotVersion,
@@ -154,7 +146,7 @@ public final class Dtos {
 
     public record ExplainResponse(
             String flagKey,
-            String finalValue,
+            boolean enabled,
             String reasonCode,
             String appKey,
             String environment,
@@ -162,7 +154,6 @@ public final class Dtos {
             String matchedRuleId,
             List<String> matchedConditions,
             Integer rolloutBucket,
-            Integer rolloutPercentage,
             String releaseKey,
             long snapshotVersion,
             Instant evaluatedAt

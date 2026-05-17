@@ -17,7 +17,6 @@ const message = ref("");
 const showCreatePanel = ref(false);
 const newFlag = ref("");
 const newFlagDescription = ref("");
-const newFlagValue = ref("true");
 
 // configure panel
 const configuringFlagKey = ref<string | null>(null);
@@ -26,6 +25,7 @@ const cfgEnvironment = ref("local");
 const cfgRegions = ref(["Asia"]);
 const cfgSubject = ref("vip");
 const cfgRelease = ref(todayRelease());
+const cfgEnabled = ref(true);
 const cfgRollout = ref(100);
 const latestSnapshot = ref<any | null>(null);
 
@@ -98,12 +98,11 @@ async function createFlag() {
   try {
     const created = await api("/api/v1/flags", {
       method: "POST",
-      body: JSON.stringify({ flag: newFlag.value.trim(), description: newFlagDescription.value.trim(), type: "text", value: newFlagValue.value })
+      body: JSON.stringify({ flag: newFlag.value.trim(), description: newFlagDescription.value.trim(), type: "boolean" })
     });
     message.value = `Flag "${created.flagKey}" created.`;
     newFlag.value = "";
     newFlagDescription.value = "";
-    newFlagValue.value = "true";
     showCreatePanel.value = false;
     await load();
     startConfigure(created.flagKey);
@@ -139,8 +138,7 @@ async function configureFlag() {
         regions: cfgRegions.value,
         subject: cfgSubject.value,
         release: cfgRelease.value,
-        value: newFlagValue.value || "true",
-        enabled: true,
+        enabled: cfgEnabled.value,
         rolloutPercentage: cfgRollout.value,
         conditionJson: conditionPreview.value
       })
@@ -191,11 +189,11 @@ async function runEvaluation() {
     const context = { subjectKey: evalSubjectKey.value, region: evalRegion.value, subject: evalSubject.value, release: evalRelease.value };
     evaluation.value = await api(`/api/v1/evaluations/flags/${encodeURIComponent(evalFlagKey.value)}`, {
       method: "POST",
-      body: JSON.stringify({ appKey: evalApp.value, environment: evalEnvironment.value, context, defaultValue: "false" })
+      body: JSON.stringify({ appKey: evalApp.value, environment: evalEnvironment.value, context })
     });
     explain.value = await api(`/api/v1/evaluations:explain/${encodeURIComponent(evalFlagKey.value)}`, {
       method: "POST",
-      body: JSON.stringify({ appKey: evalApp.value, environment: evalEnvironment.value, context, defaultValue: "false" })
+      body: JSON.stringify({ appKey: evalApp.value, environment: evalEnvironment.value, context })
     });
   } catch (e) {
     message.value = String(e);
@@ -246,15 +244,6 @@ onMounted(load);
       <div class="create-grid">
         <label>Flag key<input v-model="newFlag" placeholder="e.g. new-checkout" /></label>
         <label>Description<input v-model="newFlagDescription" placeholder="What this flag controls" /></label>
-        <label>Default value
-          <div class="inline-row">
-            <input v-model="newFlagValue" placeholder="true / false / any text" />
-            <select v-model="newFlagValue">
-              <option value="true">true</option>
-              <option value="false">false</option>
-            </select>
-          </div>
-        </label>
       </div>
       <button class="primary" :disabled="busy || !newFlag.trim()" @click="createFlag">Create</button>
     </section>
@@ -335,6 +324,12 @@ onMounted(load);
               </select>
             </div>
           </label>
+          <label>Enabled
+            <div class="inline-row">
+              <input type="checkbox" v-model="cfgEnabled" style="width:auto;" />
+              <span>{{ cfgEnabled ? 'On' : 'Off (kill switch)' }}</span>
+            </div>
+          </label>
           <label>Rollout {{ cfgRollout }}%
             <input v-model.number="cfgRollout" type="range" min="0" max="100" />
             <div class="rollout-btns">
@@ -409,7 +404,7 @@ onMounted(load);
       <button class="primary" :disabled="busy || !evalFlagKey" @click="runEvaluation">Evaluate</button>
 
       <div v-if="evaluation" class="eval-result">
-        <div class="value-badge" :class="{ on: evaluation.value === 'true' }">{{ evaluation.value }}</div>
+        <div class="value-badge" :class="{ on: evaluation.enabled }">{{ evaluation.enabled ? 'enabled' : 'disabled' }}</div>
         <pre>{{ JSON.stringify(explain, null, 2) }}</pre>
       </div>
       <p v-else class="empty">Publish a snapshot, then run an evaluation.</p>
