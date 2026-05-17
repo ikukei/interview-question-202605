@@ -316,12 +316,15 @@ onMounted(load);
             @click="newFlagEnabled = !newFlagEnabled"
           >{{ newFlagEnabled ? 'Enabled' : 'Disabled' }}</button>
         </label>
-      </div>
-      <div class="panel-actions">
-        <button class="primary" :disabled="busy || (!editingFlagKey && !newFlag.trim())" @click="submitFlagPanel">
-          {{ editingFlagKey ? 'Update' : 'Create' }}
-        </button>
-        <span v-if="panelMessage" class="panel-msg" :class="{ 'panel-msg-error': panelMessageIsError }">{{ panelMessage }}</span>
+        <label class="create-btn-cell">
+          <span class="create-btn-label">&nbsp;</span>
+          <div class="create-btn-row">
+            <button class="primary" :disabled="busy || (!editingFlagKey && !newFlag.trim())" @click="submitFlagPanel">
+              {{ editingFlagKey ? 'Update' : 'Create' }}
+            </button>
+            <span v-if="panelMessage" class="panel-msg" :class="{ 'panel-msg-error': panelMessageIsError }">{{ panelMessage }}</span>
+          </div>
+        </label>
       </div>
     </section>
 
