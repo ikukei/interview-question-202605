@@ -17,7 +17,7 @@ import org.springframework.stereotype.Component;
 @Component
 public class EvaluationEngine {
     public EvaluationDecision evaluate(Snapshot snapshot, String flagKey, EvaluationContext context) {
-        EvaluationContext safeContext = context == null ? new EvaluationContext("anonymous", null, null, null, null, null, Map.of()) : context;
+        EvaluationContext safeContext = context == null ? new EvaluationContext("anonymous", null, null, null, Map.of()) : context;
         Optional<SnapshotFlag> maybeFlag = snapshot.flags().stream()
                 .filter(flag -> flag.flagKey().equals(flagKey))
                 .findFirst();
@@ -72,8 +72,8 @@ public class EvaluationEngine {
     private String attributeValue(EvaluationContext context, String key) {
         return switch (key) {
             case "region" -> firstNonBlank(context.region(), attributes(context).get("region"));
-            case "subject", "subjectGroup" -> firstNonBlank(context.subject(), firstNonBlank(context.subjectGroup(), attributes(context).get("subject")));
-            case "release", "releaseKey" -> firstNonBlank(context.release(), firstNonBlank(context.releaseKey(), attributes(context).get("release")));
+            case "subject", "subjectGroup" -> firstNonBlank(context.subject(), attributes(context).get("subject"));
+            case "release", "releaseKey" -> firstNonBlank(context.releaseKey(), attributes(context).get("release"));
             default -> attributes(context).get(key);
         };
     }

@@ -27,7 +27,6 @@ public final class SnapshotModels {
 
     public record SnapshotRule(
             String ruleId,
-            int priority,
             Map<String, Object> conditionJson,
             int rolloutPercentage
     ) {

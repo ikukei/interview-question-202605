@@ -2,7 +2,6 @@ package com.example.featureflag.application;
 
 import com.example.featureflag.api.dto.Dtos.AddRuleRequest;
 import com.example.featureflag.api.dto.Dtos.AppResponse;
-import com.example.featureflag.api.dto.Dtos.ConditionRequest;
 import com.example.featureflag.api.dto.Dtos.ConfigureFlagRequest;
 import com.example.featureflag.api.dto.Dtos.CreateAppRequest;
 import com.example.featureflag.api.dto.Dtos.CreateFlagRequest;
@@ -68,18 +67,19 @@ public class FlagService {
     }
 
     public FlagResponse createFlag(CreateFlagRequest request) {
-        String flagKey = normalizeFlagKey(request.flag(), request.flagKey());
+        if (isBlank(request.flagKey())) {
+            throw new IllegalArgumentException("flagKey is required");
+        }
+        String flagKey = request.flagKey().trim();
         flagRepository.findByFlagKey(flagKey).ifPresent(existing -> {
             throw new IllegalArgumentException("Flag already exists: " + flagKey);
         });
 
         FlagEntity flag = new FlagEntity();
         flag.setFlagKey(flagKey);
-        flag.setName(flagKey);
         flag.setDescription(blankToDefault(request.description(), "No description"));
         flag.setType(blankToDefault(request.type(), "boolean"));
         flag.setReleaseKey(request.release());
-        flag.setEnabled(request.enabled() == null || request.enabled());
         FlagEntity saved = flagRepository.save(flag);
         auditService.record("demo-user", "create", "flag", saved.getFlagKey(), null, request.toString());
         return toFlagResponse(saved, null);
@@ -104,14 +104,11 @@ public class FlagService {
         if (request.type() != null) {
             flag.setType(request.type());
         }
-        if (request.status() != null) {
-            flag.setStatus(request.status());
+        if (request.enabled() != null) {
+            flag.setEnabled(request.enabled());
         }
         if (request.release() != null) {
             flag.setReleaseKey(request.release());
-        }
-        if (request.enabled() != null) {
-            flag.setEnabled(request.enabled());
         }
         flag.touch();
         auditService.record("demo-user", "update", "flag", flag.getFlagKey(), null, request.toString());
@@ -136,12 +133,9 @@ public class FlagService {
                 .orElseThrow(() -> new NotFoundException("Flag config not found for " + flagKey));
 
         RuleEntity rule = new RuleEntity();
-        rule.setFlagId(flag.getId());
         rule.setConfigId(config.getId());
-        rule.setPriority(request.priority());
-        rule.setConditionJson(firstNonBlank(request.conditionJson(), writeJson(request.conditions() == null ? List.of() : request.conditions())));
+        rule.setConditionJson(isBlank(request.conditionJson()) ? "{}" : request.conditionJson());
         rule.setRolloutPercentage(request.rolloutPercentage());
-        rule.setEnabled(request.enabled() == null || request.enabled());
         RuleEntity saved = ruleRepository.save(rule);
         auditService.record("demo-user", "create", "rule", scopedKey(config, flag), null, request.toString());
         return toRuleResponse(saved);
@@ -152,7 +146,6 @@ public class FlagService {
         FlagConfigEntity config = configRepository.findByFlagIdAndAppKeyAndEnvironment(flag.getId(), appKey, environment)
                 .orElseThrow(() -> new NotFoundException("Flag config not found: " + flagKey));
         config.setStatus("archived");
-        config.setEnabled(false);
         config.touch();
         auditService.record("demo-user", "archive", "flag-config", scopedKey(config, flag), null, null);
         return toFlagResponse(flag, configRepository.save(config));
@@ -178,12 +171,9 @@ public class FlagService {
         FlagConfigEntity savedConfig = configRepository.save(config);
 
         RuleEntity rule = new RuleEntity();
-        rule.setFlagId(flag.getId());
         rule.setConfigId(savedConfig.getId());
-        rule.setPriority(1);
         rule.setConditionJson(buildConditionJson(request));
         rule.setRolloutPercentage(savedConfig.getRolloutPercentage());
-        rule.setEnabled(true);
         ruleRepository.saveConfigRule(rule);
 
         auditService.record("demo-user", "configure", "flag-config", scopedKey(savedConfig, flag), null, request.toString());
@@ -214,7 +204,7 @@ public class FlagService {
     private FlagResponse toFlagResponse(FlagEntity flag, FlagConfigEntity config) {
         List<RuleResponse> rules = config == null
                 ? List.of()
-                : ruleRepository.findByConfigIdOrderByPriorityAsc(config.getId()).stream()
+                : ruleRepository.findByConfigId(config.getId()).stream()
                         .map(this::toRuleResponse)
                         .toList();
         String conditionJson = rules.isEmpty() ? "{}" : rules.get(0).conditionJson();
@@ -222,14 +212,13 @@ public class FlagService {
                 flag.getId(),
                 config == null ? null : config.getId(),
                 flag.getFlagKey(),
-                flag.getFlagKey(),
                 config == null ? null : config.getAppKey(),
                 config == null ? null : config.getEnvironment(),
                 flag.getDescription(),
                 flag.getType(),
-                config == null || config.isEnabled(),
+                flag.isEnabled() && (config == null || config.isEnabled()),
                 config == null ? null : config.getReleaseKey(),
-                config == null ? flag.getStatus() : config.getStatus(),
+                config == null ? null : config.getStatus(),
                 config == null ? 100 : config.getRolloutPercentage(),
                 conditionJson,
                 rules
@@ -239,11 +228,8 @@ public class FlagService {
     private RuleResponse toRuleResponse(RuleEntity rule) {
         return new RuleResponse(
                 rule.getId(),
-                rule.getPriority(),
-                List.of(),
                 rule.getConditionJson(),
-                rule.getRolloutPercentage(),
-                rule.isEnabled()
+                rule.getRolloutPercentage()
         );
     }
 
@@ -255,8 +241,8 @@ public class FlagService {
         if (request.regions() != null && !request.regions().isEmpty()) {
             condition.put("region", request.regions());
         }
-        if (!isBlank(request.subject())) {
-            condition.put("subject", request.subject());
+        if (request.subjects() != null && !request.subjects().isEmpty()) {
+            condition.put("subject", request.subjects());
         }
         return writeJson(condition);
     }
@@ -274,24 +260,12 @@ public class FlagService {
         return Math.max(0, Math.min(100, value));
     }
 
-    private String normalizeFlagKey(String flag, String flagKey) {
-        String value = firstNonBlank(flag, flagKey);
-        if (isBlank(value)) {
-            throw new IllegalArgumentException("flag is required");
-        }
-        return value.trim();
-    }
-
     private String scopedKey(FlagConfigEntity config, FlagEntity flag) {
         return config.getEnvironment() + ":" + config.getAppKey() + ":" + flag.getFlagKey();
     }
 
     private String blankToDefault(String value, String defaultValue) {
         return isBlank(value) ? defaultValue : value.trim();
-    }
-
-    private String firstNonBlank(String first, String second) {
-        return !isBlank(first) ? first.trim() : second;
     }
 
     private boolean isBlank(String value) {

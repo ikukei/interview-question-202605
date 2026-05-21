@@ -19,34 +19,44 @@ public class DemoDataInitializer {
     CommandLineRunner seedDemoData(
             FlagRepository flagRepository,
             FlagService flagService,
-            PublishService publishService
+            PublishService publishService,
+            AuditService auditService
     ) {
         return args -> {
-            String flagKey = "new-checkout";
+            String flagKey = "google-sso";
             String release = LocalDate.now().format(DateTimeFormatter.BASIC_ISO_DATE);
 
             if (flagRepository.findByFlagKey(flagKey).isEmpty()) {
                 flagService.createFlag(new CreateFlagRequest(
                         flagKey,
-                        null,
-                        "Enables the simplified checkout experience for selected demo users.",
+                        "Enables the Google SSO",
                         "boolean",
-                        release,
-                        true
+                        release
                 ));
+                auditService.record("demo-seed", "CREATE", "flag", flagKey,
+                        null,
+                        "{\"flagKey\":\"" + flagKey + "\",\"type\":\"boolean\",\"release\":\"" + release + "\"}");
             }
 
             flagService.configureFlag(flagKey, new ConfigureFlagRequest(
-                    List.of("vue-demo", "java-demo"),
+                    List.of("vue-demo", "java-demo", "python-demo"),
                     "local",
                     List.of("Asia", "North America"),
-                    "vip",
+                    List.of("vip"),
                     true,
                     100,
                     null
             ));
+            auditService.record("demo-seed", "CONFIGURE", "flag", flagKey,
+                    null,
+                    "{\"apps\":[\"vue-demo\",\"java-demo\",\"python-demo\"],\"environment\":\"local\",\"regions\":[\"Asia\",\"North America\"],\"subjects\":[\"vip\"],\"rollout\":100}");
+
             publishService.publish(new PublishRequest("vue-demo", "local", "demo-seed"));
             publishService.publish(new PublishRequest("java-demo", "local", "demo-seed"));
+            publishService.publish(new PublishRequest("python-demo", "local", "demo-seed"));
+            auditService.record("demo-seed", "PUBLISH", "snapshot", flagKey,
+                    null,
+                    "{\"apps\":[\"vue-demo\",\"java-demo\",\"python-demo\"],\"environment\":\"local\"}");
         };
     }
 }

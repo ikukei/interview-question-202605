@@ -1,143 +1,172 @@
 # Feature Management Service Demo
 
-This repository contains a take-home sized feature management system.
+A take-home sized feature flag management system: backend, admin UI, multi-platform SDKs, and live demo clients.
 
-## Modules
+## Project Structure
 
-- `backend`: Spring Boot backend with H2 local database and Oracle production profile placeholder.
-- `java-sdk`: Java SDK for remote feature evaluation.
-- `java-demo`: Java command-line demo using `java-sdk`.
-- `frontend-sdk`: TypeScript frontend SDK.
-- `web-admin`: Vue admin UI for managing flags, publishing snapshots, and testing evaluation.
-- `vue-demo`: Vue demo page using `frontend-sdk`.
-
-## Verified Backend Flow
-
-The backend seeds demo data in the `local` profile:
-
-```text
-appKey: checkout-service
-environment: local
-flagKey: new-checkout
-rule: region equals us-east -> true
+```
+backend/          Spring Boot REST API + rule engine + snapshot publisher
+web-admin/        Vue 3 admin UI  — create flags, configure, publish
+vue-demo/         Vue 3 demo page — shows live flag evaluations
+frontend-sdk/     TypeScript SDK (used by web-admin and vue-demo)
+java-sdk/         Java SDK
+java-demo/        Java CLI demo — polls backend and prints results
+python-sdk/       Python SDK (stdlib only, no extra dependencies)
+python-demo/      Python CLI demo — polls backend and prints results
+android-sdk/      Kotlin SDK stub (interface defined, not implemented)
+ios-sdk/          Swift SDK stub  (interface defined, not implemented)
 ```
 
-The real evaluation endpoint was verified locally:
+## Prerequisites
 
-```text
-flagKey: new-checkout
-value: true
-reasonCode: RULE_MATCH
-snapshotVersion: 1
-releaseKey: release-2026-05-checkout
-```
+- JDK 17+
+- Maven 3.9+
+- Node.js 18+
+- Python 3.10+
 
-The Java CLI demo was also verified locally and prints:
+## Build
 
-```text
-Feature flag: new-checkout
-Feature value: true
-Enabled: true
-Reason: RULE_MATCH
-Snapshot version: 1
-Release: release-2026-05-checkout
-```
+```bash
+# 1. Build backend jar, Java SDK, and Java demo
+mvn -pl backend,java-sdk,java-demo -am -DskipTests package
 
-## Local Maven Notes
-
-This machine has a global Maven configuration pointing to `D:/Java/maven-repository`.
-
-For this workspace, use:
-
-```powershell
-mvn -gs .mvn/offline-settings.xml -s .mvn/offline-settings.xml -o -DskipTests clean package
-```
-
-The backend now uses a standard Maven H2 runtime dependency. If Maven dependency download is blocked, configure the local proxy first.
-
-## Run Backend
-
-```powershell
-mvn -gs .mvn/offline-settings.xml -s .mvn/offline-settings.xml -o -pl backend spring-boot:run
-```
-
-Backend URL:
-
-```text
-http://localhost:8080
-```
-
-## Test Evaluation Endpoint
-
-```powershell
-$body = @{
-  appKey = "checkout-service"
-  environment = "local"
-  defaultValue = "false"
-  context = @{
-    subjectKey = "local-test-user"
-    attributes = @{
-      region = "us-east"
-      platform = "powershell"
-    }
-  }
-} | ConvertTo-Json -Depth 5
-
-Invoke-RestMethod `
-  -Uri "http://localhost:8080/api/v1/evaluations/flags/new-checkout" `
-  -Method Post `
-  -Body $body `
-  -ContentType "application/json"
-```
-
-## Run Java Demo
-
-The Maven exec plugin was not available in the local offline cache, so the demo was verified with direct `java -cp`.
-
-After packaging:
-
-```powershell
-$cp = @(
-  "java-demo\target\classes",
-  "java-sdk\target\classes",
-  "D:\Java\maven-repository\com\fasterxml\jackson\core\jackson-databind\2.21.2\jackson-databind-2.21.2.jar",
-  "D:\Java\maven-repository\com\fasterxml\jackson\core\jackson-core\2.21.2\jackson-core-2.21.2.jar",
-  "D:\Java\maven-repository\com\fasterxml\jackson\core\jackson-annotations\2.21\jackson-annotations-2.21.jar"
-) -join ";"
-
-java -cp $cp com.example.featuredemo.JavaFeatureDemo
-```
-
-## Frontend
-
-Install dependencies when network access is available:
-
-```powershell
+# 2. Build the TypeScript SDK (required by both Vue apps)
 cd frontend-sdk
-npm.cmd install
-npm.cmd run build
+npm install
+npm run build
+cd ..
 
-cd ..\web-admin
-npm.cmd install
-npm.cmd start
+# 3. Install Vue app dependencies
+cd web-admin
+npm install
+cd ..
 
-cd ..\vue-demo
-npm.cmd install
-npm.cmd start
+cd vue-demo
+npm install
+cd ..
 ```
 
-Expected local URLs:
+## Run
 
-```text
-web-admin: http://127.0.0.1:5173
-vue-demo:  http://127.0.0.1:5174
+### Quick start
+
+Double-click **`start-all-local.cmd`** (or run it from a terminal) to launch all five processes at once. Logs go to `logs/`.
+
+### Start each process manually
+
+Open a separate terminal for each:
+
+**1. Backend** — `http://127.0.0.1:8080`
+
+```cmd
+java -jar backend\target\backend-0.1.0-SNAPSHOT.jar --spring.profiles.active=local
 ```
 
-The current local environment could not install Vue/Vite dependencies because npm network access was blocked.
+**2. web-admin** — `http://127.0.0.1:5173`
+
+```cmd
+cd web-admin
+npm run dev -- --host 127.0.0.1 --port 5173
+```
+
+**3. vue-demo** — `http://127.0.0.1:5174`
+
+```cmd
+cd vue-demo
+npm run dev -- --host 127.0.0.1 --port 5174
+```
+
+**4. java-demo**
+
+```cmd
+cd python-demo
+python main.py http://127.0.0.1:8080 python-demo-user Asia vi <YYYYMMDD> 5
+```
+
+> The classpath also needs the Jackson jars from your local Maven cache. `start-all-local.cmd` resolves these automatically.
+
+**5. python-demo**
+
+```cmd
+cd python-demo
+python main.py http://127.0.0.1:8080 python-demo-user Asia vip <YYYYMMDD> 5
+```
+
+On first start the backend automatically seeds a demo flag — no manual setup needed.
+
+## Demo Data (seeded automatically)
+
+| Field | Value |
+|---|---|
+| Flag key | `google-sso` |
+| Type | `boolean` |
+| Apps | `vue-demo`, `java-demo`, `python-demo` |
+| Environment | `local` |
+| Target regions | `Asia`, `North America` |
+| Target subject | `vip` |
+| Rollout | 100 % |
+
+A request with `region=Asia` and `subject=vip` returns:
+
+```json
+{ "flagKey": "google-sso", "enabled": true, "reasonCode": "RULE_MATCH" }
+```
+
+## Try the API
+
+**Evaluate one flag:**
+
+```bash
+curl -X POST http://localhost:8080/api/v1/evaluations/flags/google-sso \
+  -H "Content-Type: application/json" \
+  -d '{
+    "appKey": "vue-demo",
+    "environment": "local",
+    "context": { "subjectKey": "user-001", "region": "Asia", "subject": "vip" }
+  }'
+```
+
+**Evaluate all flags (batch):**
+
+```bash
+curl -X POST "http://localhost:8080/api/v1/evaluations:batch" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "appKey": "vue-demo",
+    "environment": "local",
+    "flagKeys": ["google-sso"],
+    "context": { "subjectKey": "user-001", "region": "Asia", "subject": "vip" }
+  }'
+```
+
+**List flags:**
+
+```bash
+curl "http://localhost:8080/api/v1/flags?appKey=vue-demo&environment=local"
+```
+
+## H2 Database Console
+
+While the backend is running, open the browser console at:
+
+```
+http://localhost:8080/h2-console
+
+JDBC URL : jdbc:h2:file:./data/feature-flags;MODE=Oracle;DATABASE_TO_UPPER=false
+User     : sa
+Password : (leave blank)
+```
+
+## Architecture Diagrams
+
+Pre-generated PNGs in the project root:
+
+- `arch-logical-current.png` — current four-layer logical architecture
+- `arch-network-current.png` — current network topology and ports
+- `arch-improved.png` — industry-standard target architecture (CDN, Redis, PostgreSQL, observability)
 
 ## Production Notes
 
-- Production database profile is documented as Oracle in `backend/src/main/resources/application-prod.yml`.
-- Demo runtime uses local H2.
-- The backend evaluates against published immutable snapshots and keeps the latest snapshot in an in-memory cache.
-- Production extensions would include Redis, SDK local snapshot caching, streaming distribution, RBAC, audit dashboards, and OpenTelemetry.
+- Switch to Oracle by activating the `prod-oracle` Maven profile and setting `spring.profiles.active=prod`.
+- The evaluation path reads from an in-memory snapshot cache — no database hit per request.
+- See `coding.md` for full API contracts, DB schema, and improvement roadmap.

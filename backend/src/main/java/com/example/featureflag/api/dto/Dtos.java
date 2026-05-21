@@ -19,28 +19,24 @@ public final class Dtos {
     }
 
     public record CreateFlagRequest(
-            String flag,
             String flagKey,
             String description,
             String type,
-            String release,
-            Boolean enabled
+            String release
     ) {
     }
 
     public record UpdateFlagRequest(
             String description,
             String type,
-            String status,
-            String release,
-            Boolean enabled
+            Boolean enabled,
+            String release
     ) {
     }
 
     public record FlagResponse(
             Long id,
             Long configId,
-            String flag,
             String flagKey,
             String appKey,
             String environment,
@@ -59,7 +55,7 @@ public final class Dtos {
             List<String> appKeys,
             String environment,
             List<String> regions,
-            String subject,
+            List<String> subjects,
             Boolean enabled,
             Integer rolloutPercentage,
             String conditionJson
@@ -69,28 +65,15 @@ public final class Dtos {
     public record AddRuleRequest(
             String appKey,
             String environment,
-            int priority,
-            List<ConditionRequest> conditions,
             String conditionJson,
-            int rolloutPercentage,
-            Boolean enabled
-    ) {
-    }
-
-    public record ConditionRequest(
-            String attribute,
-            String operator,
-            String value
+            int rolloutPercentage
     ) {
     }
 
     public record RuleResponse(
             Long id,
-            int priority,
-            List<ConditionRequest> conditions,
             String conditionJson,
-            int rolloutPercentage,
-            boolean enabled
+            int rolloutPercentage
     ) {
     }
 
@@ -114,8 +97,6 @@ public final class Dtos {
             String subjectKey,
             String region,
             String subject,
-            String subjectGroup,
-            String release,
             String releaseKey,
             Map<String, String> attributes
     ) {
@@ -159,6 +140,18 @@ public final class Dtos {
             String releaseKey,
             long snapshotVersion,
             Instant evaluatedAt
+    ) {
+    }
+
+    public record AuditLogResponse(
+            Long id,
+            String actor,
+            String action,
+            String resourceType,
+            String resourceKey,
+            String beforeJson,
+            String afterJson,
+            Instant createdAt
     ) {
     }
 }

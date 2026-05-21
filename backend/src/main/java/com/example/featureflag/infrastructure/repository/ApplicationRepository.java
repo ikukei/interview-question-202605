@@ -27,21 +27,20 @@ public class ApplicationRepository {
     }
 
     public ApplicationEntity save(ApplicationEntity app) {
-        if (app.getId() == null) {
-            return insert(app);
-        }
-        return update(app);
+        return app.getId() == null ? insert(app) : update(app);
     }
 
     private ApplicationEntity insert(ApplicationEntity app) {
         long nextId = jdbcTemplate.queryForObject("select ff_application_seq.nextval from dual", Long.class);
         String sql = "insert into ff_application(id, app_key, name, owner, created_at, updated_at) values (?, ?, ?, ?, ?, ?)";
-        jdbcTemplate.update(sql, nextId, app.getAppKey(), app.getName(), app.getOwner(), Timestamp.from(app.getCreatedAt()), Timestamp.from(app.getUpdatedAt()));
+        jdbcTemplate.update(sql, nextId, app.getAppKey(), app.getName(), app.getOwner(),
+                Timestamp.from(app.getCreatedAt()), Timestamp.from(app.getUpdatedAt()));
         app.setId(nextId);
         return app;
     }
 
     private ApplicationEntity update(ApplicationEntity app) {
+        app.touch();
         String sql = "update ff_application set name = ?, owner = ?, updated_at = ? where id = ?";
         jdbcTemplate.update(sql, app.getName(), app.getOwner(), Timestamp.from(app.getUpdatedAt()), app.getId());
         return app;
@@ -53,6 +52,7 @@ public class ApplicationRepository {
         app.setAppKey(rs.getString("app_key"));
         app.setName(rs.getString("name"));
         app.setOwner(rs.getString("owner"));
+        app.setCreatedAt(rs.getTimestamp("created_at").toInstant());
         return app;
     }
 }
