@@ -1,0 +1,664 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>功能开关管理服务 — 系统架构设计</title>
+  <style>
+    :root {
+      --bg: #f4efe7;
+      --panel: #fffaf2;
+      --panel-strong: #fff;
+      --text: #1f2937;
+      --muted: #5b6472;
+      --line: #ded4c4;
+      --accent: #a64b2a;
+      --accent-soft: #f3dfd2;
+      --code-bg: #1b2430;
+      --code-text: #edf2f7;
+      --shadow: 0 18px 50px rgba(72,48,28,.08);
+    }
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      font-family: "PingFang SC","Microsoft YaHei","Segoe UI",sans-serif;
+      color: var(--text); line-height: 1.75;
+      background:
+        radial-gradient(circle at top left, rgba(166,75,42,.16), transparent 26%),
+        linear-gradient(180deg, #f8f3eb 0%, #f4efe7 100%);
+    }
+    .page { max-width: 1200px; margin: 0 auto; padding: 40px 20px 64px; }
+    .hero {
+      background: linear-gradient(135deg, rgba(166,75,42,.96), rgba(121,43,22,.96));
+      color: #fff; border-radius: 24px; padding: 36px 32px;
+      box-shadow: var(--shadow); margin-bottom: 28px;
+    }
+    .hero h1 { margin: 0 0 12px; font-size: 2.1rem; line-height: 1.2; }
+    .hero p { margin: 0 0 16px; max-width: 820px; color: rgba(255,247,240,.92); font-size: 1rem; }
+    .tags { display: flex; flex-wrap: wrap; gap: 8px; }
+    .tag { background: rgba(255,255,255,.18); border: 1px solid rgba(255,255,255,.35);
+      border-radius: 20px; padding: 4px 14px; font-size: .83rem; color: #fff; }
+    .layout { display: grid; grid-template-columns: 268px minmax(0,1fr); gap: 24px; align-items: start; }
+    .toc, .content {
+      background: var(--panel); border: 1px solid rgba(222,212,196,.9);
+      border-radius: 22px; box-shadow: var(--shadow);
+    }
+    .toc { position: sticky; top: 20px; padding: 22px 20px; }
+    .toc h2 { margin: 0 0 14px; font-size: .88rem; color: var(--accent); text-transform: uppercase; letter-spacing: .06em; }
+    .toc a { display: block; color: var(--muted); text-decoration: none; padding: 5px 0;
+      border-bottom: 1px dashed rgba(166,75,42,.12); font-size: .87rem; }
+    .toc a:hover { color: var(--accent); }
+    .toc .sub { padding-left: 12px; font-size: .81rem; }
+    .content { padding: 30px 34px 42px; overflow: hidden; }
+    h2 { margin-top: 34px; margin-bottom: 14px; font-size: 1.55rem; color: #7a2e17;
+      border-bottom: 2px solid var(--accent-soft); padding-bottom: 8px; }
+    h3 { margin-top: 22px; margin-bottom: 10px; font-size: 1.1rem; color: #8a3b20; }
+    h4 { margin-top: 16px; margin-bottom: 7px; font-size: .97rem; color: #7a2e17; }
+    p { margin: 0 0 13px; }
+    ul, ol { margin: 0 0 16px 22px; padding: 0; }
+    li { margin: 5px 0; }
+    code { font-family: Consolas,"Courier New",monospace; font-size: .9em;
+      background: #f2e8dc; padding: 2px 6px; border-radius: 6px; color: #7a2e17; }
+    pre { margin: 14px 0 18px; padding: 16px 20px; background: var(--code-bg);
+      color: var(--code-text); border-radius: 14px; overflow-x: auto; font-size: .88em; line-height: 1.6; }
+    pre code { background: transparent; padding: 0; color: inherit; }
+    .card { background: var(--panel-strong); border: 1px solid var(--line);
+      border-radius: 16px; padding: 16px 18px 4px; margin: 14px 0 20px; }
+    .callout { margin: 16px 0 20px; padding: 14px 18px; border-left: 4px solid var(--accent);
+      background: #fff4ea; border-radius: 0 12px 12px 0; color: #5c2a10; }
+    .mermaid-wrap { background: #fff; border: 1px solid var(--line); border-radius: 16px;
+      padding: 12px; overflow-x: auto; margin: 14px 0 20px; }
+    table { width: 100%; border-collapse: collapse; margin: 12px 0 18px; font-size: .9rem; }
+    th { background: #f2e0d0; color: #6b2810; text-align: left;
+      padding: 9px 12px; border-bottom: 2px solid var(--line); }
+    td { padding: 8px 12px; border-bottom: 1px solid var(--line); vertical-align: top; }
+    tr:last-child td { border-bottom: none; }
+    tr:nth-child(even) td { background: rgba(242,224,208,.3); }
+    .badge { display: inline-block; padding: 2px 10px; border-radius: 10px;
+      font-size: .79rem; font-weight: 700; background: var(--accent-soft); color: #7a2e17; }
+    .footer { margin-top: 26px; color: var(--muted); font-size: .87rem; }
+    @media(max-width:960px){
+      .layout { grid-template-columns: 1fr; }
+      .toc { position: static; }
+      .content { padding: 22px 18px 30px; }
+    }
+  </style>
+</head>
+<body>
+<div class="page">
+  <section class="hero">
+    <h1>功能开关管理服务 — 系统架构设计</h1>
+    <p>面向 100+ 应用、千级功能开关的高并发配置决策系统。五层缓存体系、推送优先的配置分发、P99 &lt; 5 ms 本地评估、全链路可解释性。</p>
+    <div class="tags">
+      <span class="tag">P99 &lt; 5ms</span>
+      <span class="tag">五层缓存</span>
+      <span class="tag">控制面 / 数据面分离</span>
+      <span class="tag">不可变快照</span>
+      <span class="tag">多区域高可用</span>
+      <span class="tag">SHA-256 灰度分桶</span>
+    </div>
+  </section>
+
+  <div class="layout">
+    <aside class="toc">
+      <h2>目录</h2>
+      <a href="#overview">1. 概述</a>
+      <a href="#architecture">2. 整体架构</a>
+      <a href="#principles">3. 设计原则</a>
+      <a href="#components">4. 核心组件</a>
+      <a href="#cache">5. 五层缓存体系</a>
+      <a class="sub" href="#cache-levels">  5.1 缓存分层</a>
+      <a class="sub" href="#delta-sync">  5.3 增量同步协议</a>
+      <a href="#sdk">6. SDK 设计</a>
+      <a href="#eval-engine">7. 评估引擎</a>
+      <a class="sub" href="#reason-codes">  7.2 决策原因码</a>
+      <a class="sub" href="#rollout-hash">  7.3 灰度分桶算法</a>
+      <a href="#api">8. API 设计</a>
+      <a href="#data-model">9. 数据模型</a>
+      <a href="#eval-flow">10. 评估流程</a>
+      <a href="#k8s">11. K8S 与多区域部署</a>
+      <a href="#observability">12. 可观测性</a>
+      <a href="#explainability">13. 可解释性模型</a>
+      <a href="#security">14. 安全与治理</a>
+      <a href="#tech">15. 技术选型</a>
+      <a href="#summary">16. 架构总结</a>
+    </aside>
+
+    <main class="content">
+
+      <h2 id="overview">1. 概述</h2>
+      <p>本系统是一个面向电商平台的集中式功能开关管理服务，服务于 100+ 应用，覆盖 Web、后端服务和移动客户端。核心设计目标是：在功能开关数量、规则复杂度、客户端数量持续增长的情况下，将开关评估延迟控制在 <strong>P99 &lt; 5 ms</strong>。</p>
+      <div class="card">
+        <p>系统骨架由以下部分构成：</p>
+        <ul>
+          <li>控制面：开关编辑、审批、灰度发布、审计和发布管理</li>
+          <li>数据面：极低延迟的本地或边缘评估</li>
+          <li>五层缓存：SDK 进程内 → CDN → JVM → Redis → S3</li>
+          <li>推送优先的配置分发：不可变快照 + SHA-256 校验 + 增量同步</li>
+          <li>可解释性优先：每次开关决策均可追溯，内置标准化原因码</li>
+          <li>Kubernetes 多区域部署：数据面 active-active，控制面 active-standby</li>
+        </ul>
+      </div>
+
+      <h2 id="architecture">2. 整体架构</h2>
+      <div class="mermaid-wrap">
+        <pre class="mermaid">
+flowchart TD
+    subgraph Edge["边缘与网络层"]
+        WAF["WAF / 防火墙"]
+        CDN["CDN（L2 快照缓存）"]
+        LB["负载均衡"]
+        GW["API 网关"]
+    end
+    subgraph CP["控制面"]
+        AdminUI["管理后台 / CI"]
+        MgmtAPI["管理 API"]
+        Compiler["规则编译器"]
+        MetaDB["PostgreSQL 元数据库"]
+        Kafka["Kafka 事件总线"]
+    end
+    subgraph DP["数据面"]
+        EvalAPI["评估 API"]
+        StreamGW["流式网关（SSE/gRPC）"]
+        SnapshotStore["S3 快照存储（L5）"]
+        Redis["Redis 集群（L4）"]
+        Explain["解释 / 审计存储"]
+    end
+    subgraph SDK["SDK（L1 进程内缓存）"]
+        JavaSDK["Java"] & GoSDK["Go"] & JsSDK["Node.js"] & iOSSDK["iOS"] & WebSDK["Web"]
+    end
+    WAF --> LB --> GW
+    GW --> MgmtAPI & EvalAPI & StreamGW
+    AdminUI --> MgmtAPI
+    MgmtAPI --> MetaDB & Compiler
+    Compiler --> SnapshotStore & Kafka
+    SnapshotStore --> CDN --> SDK
+    Kafka --> StreamGW --> SDK
+    EvalAPI --> Redis --> SnapshotStore
+    EvalAPI --> Explain
+        </pre>
+      </div>
+
+      <h2 id="principles">3. 设计原则</h2>
+      <ul>
+        <li><strong>尽量靠近调用方评估</strong> — SDK 进程内评估，P99 &lt; 5 ms，不走网络</li>
+        <li>配置分发推送优先，轮询作为兜底</li>
+        <li>不可变的、SHA-256 校验的版本化快照 — 缓存失效等同于版本切换</li>
+        <li>规则提前编译 — 运行时只做纯内存查找，无 DSL 解析</li>
+        <li>标准化原因码从同一评估模型中返回，而非事后补日志</li>
+        <li>按 <code>environment + appScope</code> 划分快照包 — 客户端内存不随全局开关总数线性增长</li>
+        <li>五层缓存，每层保护下一层</li>
+      </ul>
+
+      <h2 id="components">4. 核心组件</h2>
+
+      <h3>4.1 控制面</h3>
+      <ul>
+        <li>开关管理：创建、归档、打标签、分组、指定负责人、设置默认值</li>
+        <li>环境管理：dev / staging / prod / region / tenant</li>
+        <li>灰度管理：百分比灰度（basis points 精度）、白名单、分群规则、时间窗口</li>
+        <li>发布关联：绑定到发布火车、实验和故障 kill switch</li>
+        <li>审计与审批：记录谁在什么时候做了什么；生产环境强制审批流程</li>
+      </ul>
+
+      <h3>4.2 规则编译器</h3>
+      <ul>
+        <li>校验 schema 和规则引用</li>
+        <li>解析分群依赖关系；检测前置条件链和互斥开关冲突</li>
+        <li>预编译匹配树和 SHA-256 灰度分桶计划</li>
+        <li>生成不可变快照包和增量事件</li>
+        <li>按 <code>environment + appScope</code> 分配单调递增的版本号</li>
+        <li>向 Kafka 发布版本变更事件，触发扇形分发</li>
+      </ul>
+
+      <h3>4.3 快照存储（L5）</h3>
+      <ul>
+        <li>按 <code>environment + appScope + version</code> 寻址</li>
+        <li>写一次，永不修改 — 版本号即身份</li>
+        <li>由 S3 兼容对象存储承载；通过 CDN（L2）对外服务</li>
+        <li>支持全量快照拉取和从已知版本的增量拉取</li>
+      </ul>
+
+      <h3>4.4 流式分发网关</h3>
+      <ul>
+        <li>SSE、WebSocket 或 gRPC 流式长连接</li>
+        <li>推送轻量版本变更事件：<code>{ scope, version, checksum }</code></li>
+        <li>SDK 仅在版本变化时拉取增量或全量快照</li>
+        <li>流式连接不可用时，退回 CDN 拉取或直接从 S3 获取</li>
+      </ul>
+
+      <h3>4.5 评估层</h3>
+      <ul>
+        <li><strong>本地 SDK 评估（主路径）</strong> — 进程内，零网络调用，P99 &lt; 5 ms</li>
+        <li><strong>远程评估 API（辅助路径）</strong> — 面向轻量客户端、服务端模板渲染、紧急兜底</li>
+        <li>远程评估节点优先从 Redis（L4）加载快照，miss 时回退到 S3（L5）</li>
+      </ul>
+
+      <h3>4.6 可解释性与审计存储</h3>
+      <ul>
+        <li>管理操作审计日志：永久保留，追加写入</li>
+        <li>评估决策追踪：默认 1% 采样；支持按 flagKey / subjectKey / traceId 按需开启全量追踪</li>
+        <li>存储标准化原因码、灰度分桶值、命中规则、快照版本</li>
+        <li>由 Elasticsearch 承载，支持查询</li>
+      </ul>
+
+      <h3>4.7 边缘与网络层</h3>
+      <ul>
+        <li><strong>WAF / 防火墙</strong>：DDoS 防护、SDK 分发端点 IP 白名单</li>
+        <li><strong>CDN</strong>：按内容寻址缓存不可变快照版本；命中率目标 &gt; 95%</li>
+        <li><strong>负载均衡</strong>：L4/L7 路由，基于健康状态在 K8S Pod 间分发</li>
+        <li><strong>API 网关</strong>：鉴权、限流、路由到控制面或数据面</li>
+      </ul>
+
+      <h2 id="cache">5. 五层缓存体系</h2>
+
+      <h3 id="cache-levels">5.1 缓存分层</h3>
+      <table>
+        <tr><th>层级</th><th>位置</th><th>作用域</th><th>失效方式</th><th>延迟</th></tr>
+        <tr><td><span class="badge">L1</span></td><td>SDK 进程内内存</td><td>每个应用进程</td><td>版本推送事件</td><td>&lt; 1 ms</td></tr>
+        <tr><td><span class="badge">L2</span></td><td>CDN 边缘节点</td><td><code>scope + version</code>（不可变）</td><td>内容寻址，永不失效</td><td>&lt; 5 ms</td></tr>
+        <tr><td><span class="badge">L3</span></td><td>JVM / 评估节点共享内存</td><td>每个评估节点</td><td>版本推送事件</td><td>&lt; 2 ms</td></tr>
+        <tr><td><span class="badge">L4</span></td><td>Redis 集群</td><td>每个 <code>environment + appScope</code></td><td>版本变更发布</td><td>&lt; 5 ms</td></tr>
+        <tr><td><span class="badge">L5</span></td><td>S3 / 对象存储</td><td>每个 <code>scope + version</code>（不可变）</td><td>永不失效</td><td>&lt; 100 ms</td></tr>
+      </table>
+      <p>因为快照按版本不可变，L2 和 L5 永远不需要主动失效。新发布创建新版本对象，客户端在校验 checksum 后原子切换到新版本。</p>
+
+      <h3>5.2 基于 AppScope 的分包</h3>
+      <ul>
+        <li>按 <code>appScope</code> 分包：每个应用只收到它用到的开关</li>
+        <li>按 <code>environment</code> 严格隔离（dev / staging / prod 永远是独立快照）</li>
+        <li>全局共享开关（多 app 共用）作为独立命名 scope</li>
+        <li>客户端内存消耗与实际使用量成正比，不随全局目录增长</li>
+      </ul>
+
+      <h3 id="delta-sync">5.3 增量同步协议</h3>
+      <p>SDK 维护的本地状态：</p>
+      <pre><code>{ "scope": "prod:checkout-web", "version": 124,
+  "checksum": "sha256:abc123...", "lastRefreshedAt": "..." }</code></pre>
+      <p>发布时：</p>
+      <ol>
+        <li>规则编译器向 Kafka 发布 <code>{ scope, newVersion, checksum }</code></li>
+        <li>流式网关扇形推送到该 scope 下所有已连接 SDK</li>
+        <li>SDK 对比本地版本和收到的版本</li>
+        <li>如增量在保留窗口内且可用 → 仅拉取增量</li>
+        <li>如增量链路中断或 checksum 校验失败 → 从 CDN（L2）拉取全量快照</li>
+        <li>SDK 原子替换进程内快照并更新本地状态</li>
+      </ol>
+
+      <h3>5.4 成本控制</h3>
+      <ul>
+        <li>快照 payload 压缩（Brotli 或 gzip）</li>
+        <li>预编译规则结构，运行时无 DSL 解析</li>
+        <li>在 bundle 中对共享分群和通用目标元数据去重</li>
+        <li>TTL 只作用于兜底轮询；主要新鲜度由事件驱动</li>
+        <li>Redis key 按 <code>environment:appScope</code> 粒度，不按用户粒度</li>
+      </ul>
+
+      <h3>5.5 故障降级</h3>
+      <ul>
+        <li>网络断开时 SDK 继续使用最后一次已知的好快照</li>
+        <li>移动端 SDK 将快照持久化到本地存储，支持离线启动</li>
+        <li>每个快照包含 <code>publishedAt</code>、<code>version</code> 和可选的 <code>expiresAt</code></li>
+        <li>每个 flag 类别可配置 <code>failOpen</code>（开放）或 <code>failClosed</code>（关闭）降级策略</li>
+        <li>远程评估节点在 S3 不可达时降级到 Redis 缓存快照</li>
+      </ul>
+
+      <h2 id="sdk">6. SDK 设计</h2>
+
+      <h3>6.1 设计目标</h3>
+      <ul>
+        <li>Java、Go、Node.js、iOS、Android、Web 具有相同的概念 API</li>
+        <li>默认本地评估 — 热路径不走网络</li>
+        <li>所有语言评估行为确定性一致</li>
+        <li>移动端支持离线模式</li>
+      </ul>
+
+      <h3>6.2 统一 SDK 接口</h3>
+      <pre><code>initialize(config): Promise&lt;void&gt;
+boolVariation(flagKey, context, defaultValue): boolean
+stringVariation(flagKey, context, defaultValue): string
+numberVariation(flagKey, context, defaultValue): number
+jsonVariation(flagKey, context, defaultValue): object
+getEvaluationDetails(flagKey, context, defaultValue): EvaluationDetails
+trackExposure(flagKey, context, result): void
+flush(): Promise&lt;void&gt;
+close(): void</code></pre>
+      <p>标准化 <code>context</code> 结构：</p>
+      <ul>
+        <li><code>subjectKey</code>：userId / deviceId / sessionId / merchantId</li>
+        <li><code>attributes</code>：region、appVersion、platform、locale、membershipLevel、tenantId</li>
+      </ul>
+
+      <h3>6.3 SDK 运行时模型</h3>
+      <ol>
+        <li>从本地持久化快照启动（移动端离线启动）</li>
+        <li>建立后台流式连接（SSE 或 gRPC）接收推送更新</li>
+        <li>流式连接不可用时退回轮询</li>
+        <li>对进程内编译快照进行评估 — 不走网络</li>
+        <li>通过批量队列异步上报曝光事件和健康指标</li>
+        <li>收到版本推送时：拉取增量或全量快照，校验 checksum，原子替换</li>
+      </ol>
+
+      <h3>6.4 跨语言一致性</h3>
+      <ul>
+        <li>统一评估规范文档</li>
+        <li>SHA-256 哈希算法：<code>hash(flagKey + ":" + subjectKey) % 10000</code></li>
+        <li>统一规则优先级：priority 升序，相同 priority FIFO</li>
+        <li>统一 null/empty 属性处理语义</li>
+        <li>黄金测试向量（golden test vectors）：每个 SDK 均运行同一套输入 → 期望输出，CI 强制不能偏离</li>
+      </ul>
+
+      <h2 id="eval-engine">7. 评估引擎</h2>
+
+      <h3>7.1 评估步骤</h3>
+      <p>每次 <code>evaluate(flagKey, context)</code> 调用：</p>
+      <ol>
+        <li>从 L1（SDK 进程内缓存）加载活跃快照</li>
+        <li>按 <code>flagKey</code> 查找开关 — 未找到则返回调用方默认值，原因码 <code>FLAG_NOT_FOUND</code></li>
+        <li>若 <code>flag.enabled = false</code> → 返回开关默认值，原因码 <code>FLAG_DISABLED</code></li>
+        <li>按 priority 升序遍历规则：
+          <ul>
+            <li>条件不匹配 context 属性 → 继续下一条</li>
+            <li>计算分桶：<code>SHA-256(flagKey + ":" + subjectKey) % 10000</code></li>
+            <li>若 <code>bucket &lt; rolloutBps</code> → 返回规则变体，原因码 <code>RULE_MATCH</code></li>
+            <li>若 <code>bucket ≥ rolloutBps</code> → 记录 <code>ROLLOUT_NOT_INCLUDED</code>，继续</li>
+          </ul>
+        </li>
+        <li>无规则命中或所有灰度校验均排除该 subject → 返回开关默认值，原因码 <code>DEFAULT_VALUE</code></li>
+      </ol>
+
+      <h3 id="reason-codes">7.2 决策原因码</h3>
+      <table>
+        <tr><th>原因码</th><th>含义</th></tr>
+        <tr><td><code>FLAG_NOT_FOUND</code></td><td>快照中不存在该 flagKey</td></tr>
+        <tr><td><code>FLAG_DISABLED</code></td><td>开关存在但 <code>enabled = false</code></td></tr>
+        <tr><td><code>RULE_MATCH</code></td><td>目标规则命中且灰度分桶通过</td></tr>
+        <tr><td><code>ROLLOUT_NOT_INCLUDED</code></td><td>规则条件命中但 subject 被灰度排除</td></tr>
+        <tr><td><code>DEFAULT_VALUE</code></td><td>无规则命中，返回开关默认值</td></tr>
+        <tr><td><code>PREREQUISITE_FAILED</code></td><td>前置开关条件未满足</td></tr>
+        <tr><td><code>STALE_SNAPSHOT_FALLBACK</code></td><td>网络故障，使用过期快照评估</td></tr>
+      </table>
+
+      <h3 id="rollout-hash">7.3 灰度分桶 — SHA-256</h3>
+      <pre><code>bucket = SHA-256(flagKey + ":" + subjectKey) % 10000
+enabled = bucket &lt; rolloutBps  // rolloutBps: 0–10000，5000 = 50%</code></pre>
+      <ul>
+        <li>模数 10,000 → 最小粒度 0.01%</li>
+        <li>SHA-256 保证所有语言分布均匀，无整数溢出问题</li>
+        <li>同一 subject + flag 永远得到相同 bucket（稳定灰度）</li>
+      </ul>
+
+      <h2 id="api">8. API 设计</h2>
+
+      <h3>8.1 管理 API</h3>
+      <div class="card">
+        <p><strong>开关生命周期</strong></p>
+        <ul>
+          <li><code>POST   /api/v1/flags</code> — 创建开关</li>
+          <li><code>GET    /api/v1/flags/{flagKey}</code> — 获取开关详情</li>
+          <li><code>PATCH  /api/v1/flags/{flagKey}</code> — 更新开关元数据</li>
+          <li><code>POST   /api/v1/flags/{flagKey}/archive</code> — 归档开关</li>
+        </ul>
+        <p><strong>规则与灰度管理</strong></p>
+        <ul>
+          <li><code>POST   /api/v1/flags/{flagKey}/rules</code></li>
+          <li><code>PATCH  /api/v1/flags/{flagKey}/rules/{ruleId}</code></li>
+          <li><code>DELETE /api/v1/flags/{flagKey}/rules/{ruleId}</code></li>
+          <li><code>POST   /api/v1/flags/{flagKey}/publish</code> — 发布</li>
+          <li><code>POST   /api/v1/flags/{flagKey}/rollback</code> — 回滚</li>
+        </ul>
+        <p><strong>分群、发布关联、审计</strong></p>
+        <ul>
+          <li><code>POST /api/v1/segments</code></li>
+          <li><code>POST /api/v1/segments/{segmentKey}/members:import</code></li>
+          <li><code>POST /api/v1/releases</code></li>
+          <li><code>GET  /api/v1/audit-logs</code></li>
+          <li><code>GET  /api/v1/flags/{flagKey}/history</code></li>
+        </ul>
+      </div>
+
+      <h3>8.2 分发 API</h3>
+      <ul>
+        <li><code>GET /api/v1/configs/{environment}/{appScope}/snapshot</code> — 全量快照</li>
+        <li><code>GET /api/v1/configs/{environment}/{appScope}/delta?fromVersion=123</code> — 增量</li>
+        <li><code>GET /api/v1/configs/stream?environment=prod&amp;appScope=checkout-web</code> — 流式订阅</li>
+      </ul>
+      <pre><code>{
+  "environment": "prod", "appScope": "checkout-web",
+  "version": 124, "checksum": "sha256:abc123ef...",
+  "publishedAt": "2026-05-21T08:00:00Z",
+  "flags": [], "segments": []
+}</code></pre>
+
+      <h3>8.3 评估 API</h3>
+      <ul>
+        <li><code>POST /api/v1/evaluations/flags/{flagKey}</code> — 单条评估</li>
+        <li><code>POST /api/v1/evaluations:batch</code> — 批量评估</li>
+        <li><code>POST /api/v1/evaluations:explain</code> — 评估并返回完整决策链路</li>
+      </ul>
+      <pre><code>// 响应示例
+{
+  "flagKey": "new-checkout", "enabled": true, "variant": "B",
+  "version": 124, "reasonCode": "RULE_MATCH",
+  "matchedRuleId": "rule-8", "releaseId": "release-2026-05-checkout",
+  "evaluatedAt": "2026-05-21T08:00:01Z"
+}</code></pre>
+
+      <h3>8.4 解释 API 响应</h3>
+      <pre><code>{
+  "flagKey": "new-checkout", "finalValue": true,
+  "reasonCode": "RULE_MATCH", "environment": "prod",
+  "appScope": "checkout-api", "subjectKeyHash": "sha256:...",
+  "matchedRuleId": "rule-8", "matchedSegmentIds": ["seg-gold-users"],
+  "evaluatedRuleCount": 3,
+  "rolloutBucket": 3721, "rolloutThreshold": 5000,
+  "releaseId": "release-2026-05-checkout",
+  "snapshotVersion": 124, "evaluatedAt": "2026-05-21T08:00:01Z"
+}</code></pre>
+
+      <h2 id="data-model">9. 数据模型</h2>
+      <table>
+        <tr><th>实体</th><th>关键字段</th><th>说明</th></tr>
+        <tr><td><code>Application</code></td><td><code>appKey</code>, <code>name</code>, <code>owner</code></td><td>服务 / 应用注册</td></tr>
+        <tr><td><code>Flag</code></td><td><code>flagKey</code>, <code>type</code>, <code>enabled</code>, <code>defaultValue</code>, <code>status</code></td><td>开关元数据</td></tr>
+        <tr><td><code>FlagRule</code></td><td><code>ruleId</code>, <code>priority</code>, <code>conditions</code>, <code>rolloutBps</code>, <code>variant</code></td><td>目标规则；rolloutBps: 0–10000</td></tr>
+        <tr><td><code>Segment</code></td><td><code>segmentKey</code>, <code>definition</code>, <code>version</code></td><td>可复用用户分群</td></tr>
+        <tr><td><code>ReleaseBinding</code></td><td><code>releaseId</code>, <code>flagKey</code>, <code>environment</code></td><td>发布火车关联</td></tr>
+        <tr><td><code>ConfigSnapshot</code></td><td><code>appKey</code>, <code>env</code>, <code>version</code>, <code>checksum</code>, <code>artifactUri</code></td><td>不可变运行时快照</td></tr>
+        <tr><td><code>AuditLog</code></td><td><code>actor</code>, <code>action</code>, <code>resourceKey</code>, <code>before</code>, <code>after</code>, <code>time</code></td><td>管理操作变更历史</td></tr>
+        <tr><td><code>EvaluationTrace</code></td><td><code>traceId</code>, <code>flagKey</code>, <code>subjectHash</code>, <code>reasonCode</code>, <code>rolloutBucket</code>, <code>snapshotVersion</code></td><td>采样的评估决策证据</td></tr>
+      </table>
+
+      <h2 id="eval-flow">10. 评估流程</h2>
+      <p>本地 SDK 路径（主路径，P99 &lt; 5 ms）：</p>
+      <div class="mermaid-wrap">
+        <pre class="mermaid">
+sequenceDiagram
+    participant Client as 业务请求
+    participant SDK
+    participant L1 as L1 进程内缓存
+    participant Explain as 解释存储
+
+    Client->>SDK: evaluate(flagKey, context)
+    SDK->>L1: 读取活跃快照（v124）
+    L1-->>SDK: 编译后的快照
+    SDK->>SDK: 按 priority 遍历规则
+    SDK->>SDK: SHA-256 灰度分桶校验
+    SDK-->>Client: {value, reasonCode, matchedRuleId, version}
+    SDK->>Explain: 异步采样上报 trace（批量）
+        </pre>
+      </div>
+      <p>远程评估路径（轻量客户端 / 兜底）：</p>
+      <div class="mermaid-wrap">
+        <pre class="mermaid">
+sequenceDiagram
+    participant App as 应用
+    participant EvalAPI as 评估 API
+    participant L4 as Redis L4
+    participant L5 as S3 L5
+
+    App->>EvalAPI: POST /evaluations
+    EvalAPI->>L4: 查找 scope 快照
+    alt 缓存命中
+        L4-->>EvalAPI: 编译后快照
+    else 缓存未命中
+        EvalAPI->>L5: 拉取最新快照
+        L5-->>EvalAPI: 快照数据
+        EvalAPI->>L4: 预热缓存
+    end
+    EvalAPI->>EvalAPI: 执行规则 + 灰度校验
+    EvalAPI-->>App: 结果 + 原因码
+        </pre>
+      </div>
+
+      <h2 id="k8s">11. Kubernetes 与多区域部署</h2>
+
+      <h3>11.1 K8S 集群结构</h3>
+      <pre><code>Kubernetes（每个区域一套）
+├── Namespace: feature-control-plane
+│   ├── Deployment: management-api      （2 副本，HPA）
+│   ├── Deployment: rule-compiler       （1–3 副本）
+│   ├── StatefulSet: kafka              （3 Broker）
+│   └── Service + Ingress
+├── Namespace: feature-data-plane
+│   ├── Deployment: evaluation-api      （3–10 副本，HPA）
+│   ├── Deployment: streaming-gateway   （3 副本）
+│   ├── StatefulSet: redis-cluster      （3 主 + 3 从）
+│   └── Service + Ingress
+└── Namespace: feature-infra
+    ├── Deployment: prometheus / grafana
+    └── DaemonSet: otel-collector</code></pre>
+
+      <h3>11.2 多区域策略</h3>
+      <table>
+        <tr><th>组件</th><th>策略</th><th>说明</th></tr>
+        <tr><td>控制面</td><td>Active-Standby</td><td>单主写入区域；主故障时 Standby 晋升</td></tr>
+        <tr><td>PostgreSQL</td><td>主库 + 只读副本</td><td>写主库，各区域读副本</td></tr>
+        <tr><td>S3 快照存储</td><td>跨区域复制（CRR）</td><td>所有区域均可访问快照</td></tr>
+        <tr><td>CDN</td><td>全球 PoP</td><td>按 version 内容寻址，边缘命中</td></tr>
+        <tr><td>数据面</td><td>Active-Active</td><td>每个区域独立服务本区域流量</td></tr>
+        <tr><td>Redis 集群</td><td>每区域独立</td><td>从 S3 独立加载，无跨区域依赖</td></tr>
+        <tr><td>流式网关</td><td>每区域独立</td><td>SDK 优先连本地区域网关</td></tr>
+      </table>
+
+      <h3>11.3 灾难恢复</h3>
+      <ul>
+        <li><strong>数据面 RTO</strong>：&lt; 30 秒 — SDK 自动使用旧快照，无中断</li>
+        <li><strong>控制面 RTO</strong>：&lt; 5 分钟 — Standby 晋升</li>
+        <li><strong>RPO</strong>：发布后零数据丢失 — S3 CRR 在确认前完成复制</li>
+        <li><strong>移动端韧性</strong>：最后一次快照持久化到本地存储，无网络可评估</li>
+      </ul>
+
+      <h3>11.4 紧急 Kill Switch</h3>
+      <ul>
+        <li>专用快速发布通道，绕过常规审批流程</li>
+        <li>标记为 <code>priority: critical</code> — 流式网关 3 秒内扇形推送到所有 SDK</li>
+        <li>SDK 优先处理 critical 事件，排在普通版本事件之前</li>
+      </ul>
+
+      <h2 id="observability">12. 可观测性</h2>
+
+      <h3>12.1 关键指标与告警阈值</h3>
+      <table>
+        <tr><th>信号</th><th>告警阈值</th><th>所属层面</th></tr>
+        <tr><td>评估 P99 延迟</td><td>&gt; 5 ms</td><td>数据面</td></tr>
+        <tr><td>快照传播延迟</td><td>&gt; 10 秒</td><td>分发层</td></tr>
+        <tr><td>L4 Redis 缓存命中率</td><td>&lt; 85%</td><td>数据面</td></tr>
+        <tr><td>SDK 流式重连频率</td><td>&gt; 50 次/秒</td><td>SDK 层</td></tr>
+        <tr><td>发布失败率</td><td>&gt; 1%</td><td>控制面</td></tr>
+        <tr><td>陈旧快照年龄</td><td>&gt; SLO 窗口</td><td>SDK 层</td></tr>
+      </table>
+
+      <h3>12.2 结构化日志字段</h3>
+      <pre><code>{ "flagKey":"...", "environment":"prod", "appScope":"...",
+  "snapshotVersion":124, "reasonCode":"RULE_MATCH",
+  "matchedRuleId":"...", "subjectHash":"sha256:...",
+  "region":"cn-east", "releaseId":"...", "traceId":"..." }</code></pre>
+      <p>敏感属性在记录前哈希或脱敏。</p>
+
+      <h3>12.3 分布式追踪（OpenTelemetry）</h3>
+      <p>为以下操作添加 Span：快照拉取（L4 命中 / L5 miss）、增量应用、规则评估、灰度分桶计算、远程兜底激活、解释生成。</p>
+
+      <h2 id="explainability">13. 可解释性模型</h2>
+      <p>无论来自本地 SDK 评估还是远程 API 评估，每次决策均可用统一 schema 还原。</p>
+      <table>
+        <tr><th>字段</th><th>说明</th></tr>
+        <tr><td><code>isEnabled</code></td><td>最终布尔结果</td></tr>
+        <tr><td><code>variant</code></td><td>返回的变体值</td></tr>
+        <tr><td><code>reasonCode</code></td><td>标准化原因码（见 §7.2）</td></tr>
+        <tr><td><code>matchedRuleId</code></td><td>产生结果的规则 ID</td></tr>
+        <tr><td><code>matchedSegmentIds</code></td><td>命中的分群 ID</td></tr>
+        <tr><td><code>rolloutBucket</code></td><td>哈希分桶值（0–9999）</td></tr>
+        <tr><td><code>rolloutThreshold</code></td><td>该规则配置的灰度阈值</td></tr>
+        <tr><td><code>subjectKeyHash</code></td><td>原始 subjectKey 的 SHA-256 哈希</td></tr>
+        <tr><td><code>snapshotVersion</code></td><td>评估所用快照版本</td></tr>
+        <tr><td><code>releaseId</code></td><td>关联的发布绑定</td></tr>
+        <tr><td><code>evaluatedAt</code></td><td>评估时间戳</td></tr>
+      </table>
+      <div class="callout">
+        这让团队能够回答：开关是否开启 — 以及为什么？对哪个 subject？在哪个区域？命中了哪条规则？灰度分桶值和阈值分别是多少？使用的是哪个版本的快照？
+      </div>
+
+      <h2 id="security">14. 安全与治理</h2>
+      <ul>
+        <li>按团队、环境、应用 scope 进行 RBAC 权限控制</li>
+        <li>生产环境发布强制审批流程；kill switch 设有快速通道</li>
+        <li>所有管理操作的不可变审计日志</li>
+        <li>按 appScope 轮换签名 SDK 凭证</li>
+        <li>传输层 TLS 1.3；静态存储 AES-256</li>
+        <li><code>subjectKey</code> 在记录前始终 SHA-256 哈希 — 原始 ID 不入日志</li>
+        <li>WAF 规则阻断异常快照轮询突发流量</li>
+      </ul>
+
+      <h2 id="tech">15. 技术选型</h2>
+      <table>
+        <tr><th>组件</th><th>技术</th></tr>
+        <tr><td>控制面 API</td><td>Java 17 / Spring Boot 3</td></tr>
+        <tr><td>规则编译器</td><td>Java 17</td></tr>
+        <tr><td>元数据库</td><td>PostgreSQL 16</td></tr>
+        <tr><td>快照存储</td><td>S3 兼容对象存储</td></tr>
+        <tr><td>事件总线</td><td>Kafka</td></tr>
+        <tr><td>分发网关</td><td>Spring WebFlux（SSE）或 gRPC</td></tr>
+        <tr><td>评估缓存（L4）</td><td>Redis Cluster</td></tr>
+        <tr><td>可解释性存储</td><td>Elasticsearch</td></tr>
+        <tr><td>容器编排</td><td>Kubernetes（EKS / GKE / ACK）</td></tr>
+        <tr><td>CDN</td><td>CloudFront / Akamai / 阿里云 CDN</td></tr>
+        <tr><td>可观测性</td><td>OpenTelemetry + Prometheus + Grafana + ELK</td></tr>
+        <tr><td>SDK 语言</td><td>Java、Go、Node.js、iOS（Swift）、Android（Kotlin）、Web（TypeScript）</td></tr>
+      </table>
+
+      <h2 id="summary">16. 架构总结</h2>
+      <p>关键 Trade-off：</p>
+      <ol>
+        <li><strong>控制面 / 数据面分离</strong> — 不同 SLO、伸缩方式、一致性要求</li>
+        <li><strong>本地评估优先</strong> — P99 &lt; 5 ms，进程内读内存，不走网络</li>
+        <li><strong>不可变版本化快照</strong> — 缓存失效等同于版本切换；CDN 缓存永不过期</li>
+        <li><strong>五层缓存体系</strong> — 每层保护下一层；CDN 让大规模快照分发几乎零成本</li>
+        <li><strong>基于 AppScope 的分包</strong> — 客户端 payload 与实际用量成正比</li>
+        <li><strong>SHA-256 分桶，0.01% 精度</strong> — 所有 SDK 语言一致，用户稳定</li>
+        <li><strong>可解释性内建于评估协议</strong> — 原因码、灰度分桶、命中规则全部内置</li>
+      </ol>
+      <div class="callout">
+        系统被拆分为负责编写和发布的控制面，以及负责高性能评估的数据面。配置变更被编译成 SHA-256 校验的不可变快照并按 appScope 分包，五层缓存（SDK 进程内 → CDN → JVM → Redis → S3）确保绝大多数评估不离开进程。Kafka 驱动的流式推送在秒级内通知 SDK，SDK 只拉取增量。P99 &lt; 5 ms，数据面独立扩展，每次决策完整可追溯。
+      </div>
+
+      <p class="footer">功能开关管理服务 — 系统架构设计 · 2026-05</p>
+    </main>
+  </div>
+</div>
+
+<script type="module">
+  import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs";
+  mermaid.initialize({
+    startOnLoad: true, theme: "base",
+    themeVariables: {
+      primaryColor: "#f6e3d5", primaryTextColor: "#1f2937",
+      primaryBorderColor: "#a64b2a", lineColor: "#8a3b20",
+      secondaryColor: "#fff8f0", tertiaryColor: "#f4efe7",
+      fontFamily: "PingFang SC, Microsoft YaHei, Segoe UI, sans-serif"
+    }
+  });
+</script>
+</body>
+</html>

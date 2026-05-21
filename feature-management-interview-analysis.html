@@ -1,0 +1,478 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Feature Management Service — 面试题解析</title>
+  <style>
+    :root {
+      --bg: #f2f4f8;
+      --panel: #ffffff;
+      --ink: #1a2236;
+      --muted: #5c6880;
+      --line: #dde1ec;
+      --accent: #3558a8;
+      --accent-strong: #1e3a7a;
+      --accent-soft: #e8eeff;
+      --green: #2a7a4c;
+      --green-soft: #e8f5ee;
+      --amber: #7a5a1a;
+      --amber-soft: #fef8e7;
+      --code-bg: #0f1828;
+      --code-ink: #e8f0ff;
+      --shadow: 0 14px 36px rgba(20,30,60,.09);
+    }
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      font-family: "Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;
+      color: var(--ink); line-height: 1.72;
+      background:
+        linear-gradient(135deg, rgba(53,88,168,.1), transparent 40%),
+        linear-gradient(180deg, #f5f7fb 0%, var(--bg) 100%);
+    }
+    .page { max-width: 1220px; margin: 0 auto; padding: 38px 20px 64px; }
+    .hero {
+      background: linear-gradient(135deg, #1e3a7a 0%, #3558a8 100%);
+      color: #fff; border-radius: 0; padding: 32px 34px;
+      box-shadow: var(--shadow); margin-bottom: 26px;
+    }
+    .hero h1 { margin: 0 0 10px; font-size: 2.05rem; line-height: 1.18; }
+    .hero p { margin: 0 0 14px; color: rgba(220,230,255,.9); font-size: 1rem; max-width: 860px; }
+    .tags { display: flex; flex-wrap: wrap; gap: 8px; }
+    .tag { background: rgba(255,255,255,.18); border: 1px solid rgba(255,255,255,.32);
+      border-radius: 20px; padding: 3px 13px; font-size: .83rem; color: #fff; }
+    .layout { display: grid; grid-template-columns: 272px minmax(0,1fr); gap: 22px; align-items: start; }
+    .toc { position: sticky; top: 18px; background: var(--panel);
+      border: 1px solid var(--line); padding: 20px 18px; box-shadow: var(--shadow); }
+    .toc h2 { margin: 0 0 12px; font-size: .84rem; text-transform: uppercase;
+      letter-spacing: .09em; color: var(--accent); }
+    .toc a { display: block; color: var(--muted); text-decoration: none;
+      padding: 5px 0; border-bottom: 1px dashed rgba(53,88,168,.14); font-size: .86rem; }
+    .toc a:hover { color: var(--accent); }
+    .toc .sub { padding-left: 12px; font-size: .81rem; }
+    .content { background: var(--panel); border: 1px solid var(--line);
+      padding: 28px 34px 44px; box-shadow: var(--shadow); overflow: hidden; }
+    h2 { margin-top: 32px; margin-bottom: 12px; font-size: 1.55rem;
+      color: var(--accent-strong); border-bottom: 2px solid var(--accent-soft); padding-bottom: 7px; }
+    h3 { margin-top: 20px; margin-bottom: 9px; font-size: 1.08rem; color: var(--accent); }
+    h4 { margin-top: 16px; margin-bottom: 7px; font-size: .97rem; color: var(--accent-strong); }
+    p { margin: 0 0 13px; }
+    ul, ol { margin: 0 0 16px 22px; padding: 0; }
+    li { margin: 5px 0; }
+    code { font-family: Consolas,"Courier New",monospace; font-size: .9em;
+      background: var(--accent-soft); padding: 2px 6px; border-radius: 5px; color: var(--accent-strong); }
+    pre { margin: 14px 0 18px; padding: 16px 20px; background: var(--code-bg);
+      color: var(--code-ink); overflow-x: auto; font-size: .88em; line-height: 1.6; }
+    pre code { background: transparent; padding: 0; color: inherit; }
+    .callout { margin: 14px 0 18px; padding: 14px 18px; border-left: 4px solid var(--accent);
+      background: var(--accent-soft); border-radius: 0 10px 10px 0; color: var(--accent-strong); }
+    .callout.green { border-left-color: var(--green); background: var(--green-soft); color: var(--green); }
+    .callout.amber { border-left-color: var(--amber); background: var(--amber-soft); color: var(--amber); }
+    .card { background: #f8f9fc; border: 1px solid var(--line);
+      padding: 16px 18px 4px; margin: 12px 0 18px; }
+    table { width: 100%; border-collapse: collapse; margin: 12px 0 18px; font-size: .91rem; }
+    th { background: var(--accent-soft); color: var(--accent-strong); text-align: left;
+      padding: 9px 12px; border-bottom: 2px solid var(--line); }
+    td { padding: 8px 12px; border-bottom: 1px solid var(--line); vertical-align: top; }
+    tr:last-child td { border-bottom: none; }
+    tr:nth-child(even) td { background: rgba(53,88,168,.04); }
+    .number { display: inline-flex; align-items: center; justify-content: center;
+      width: 24px; height: 24px; background: var(--accent); color: #fff;
+      border-radius: 50%; font-size: .78rem; font-weight: 700; margin-right: 6px; flex-shrink: 0; }
+    .qa-section h3 { display: flex; align-items: baseline; gap: 6px; }
+    .score { display: inline-block; padding: 2px 10px; border-radius: 10px;
+      font-size: .78rem; font-weight: 700; }
+    .score.high { background: #e8f5ee; color: #1a5c34; }
+    .score.medium { background: #fef8e7; color: #7a5a1a; }
+    .footer { margin-top: 26px; color: var(--muted); font-size: .87rem; }
+    @media(max-width:960px){
+      .layout { grid-template-columns: 1fr; }
+      .toc { position: static; }
+      .content { padding: 22px 18px 32px; }
+    }
+  </style>
+</head>
+<body>
+<div class="page">
+  <section class="hero">
+    <h1>Feature Management Service — 面试题解析</h1>
+    <p>高并发配置决策系统的架构分析、面试官真正的考查意图、追问应对策略、Trade-off 论证方法。</p>
+    <div class="tags">
+      <span class="tag">控制面 / 数据面分离</span>
+      <span class="tag">五层缓存</span>
+      <span class="tag">P99 &lt; 5ms</span>
+      <span class="tag">SHA-256 分桶</span>
+      <span class="tag">Reason Code</span>
+      <span class="tag">Immutable Snapshot</span>
+    </div>
+  </section>
+
+  <div class="layout">
+    <aside class="toc">
+      <h2>目录</h2>
+      <a href="#breakdown">1. 题目拆解</a>
+      <a href="#what-they-want">2. 面试官真正想听什么</a>
+      <a class="sub" href="#not-crud">  2.1 不是 CRUD，是分发 + 评估</a>
+      <a class="sub" href="#cache-arch">  2.2 五层缓存架构</a>
+      <a class="sub" href="#three-apis">  2.3 三类 API</a>
+      <a class="sub" href="#reason-codes">  2.4 Reason Code 要说全</a>
+      <a class="sub" href="#observability">  2.5 可观测性</a>
+      <a href="#evaluation">3. 现有方案评价</a>
+      <a class="sub" href="#highlights">  3.1 最有价值的设计点</a>
+      <a href="#order">4. 推荐表达顺序</a>
+      <a href="#followup">5. 追问应对</a>
+      <a class="sub" href="#q51">  Q5.1 为什么不用纯 Redis</a>
+      <a class="sub" href="#q52">  Q5.2 为什么要 Rule Compiler</a>
+      <a class="sub" href="#q53">  Q5.3 多语言 SDK 一致性</a>
+      <a class="sub" href="#q54">  Q5.4 日志爆炸问题</a>
+      <a class="sub" href="#q55">  Q5.5 配置变更生效速度</a>
+      <a class="sub" href="#q56">  Q5.6 多区域部署</a>
+      <a class="sub" href="#q57">  Q5.7 SDK 全挂时行为</a>
+      <a class="sub" href="#q58">  Q5.8 规则细节泄露</a>
+      <a href="#strengthen">6. 可以补强的点</a>
+      <a href="#data-model">7. 数据模型</a>
+      <a href="#flows">8. 核心流程图</a>
+      <a href="#tradeoffs">9. Trade-off 论证</a>
+      <a href="#conclusion">11. 最终结论</a>
+    </aside>
+
+    <main class="content">
+
+      <h2 id="breakdown">1. 题目拆解</h2>
+      <p>这道题表面上是在设计一个 Feature Management Service，本质上是在考一个高并发配置决策系统如何在多端、多应用、大规模规则下保持低延迟、低成本、可治理、可解释。</p>
+      <p>题目里真正的关键词有 5 个：</p>
+      <table>
+        <tr><th>关键词</th><th>真正考查的问题</th></tr>
+        <tr><td><code>thousands of feature flags</code></td><td>规则体量、配置分片、增量同步和数据结构设计 — 不是单机 Map 级别</td></tr>
+        <tr><td><code>&gt;100 applications</code></td><td>不能全量下发给所有客户端，必须做 appScope 隔离</td></tr>
+        <tr><td><code>web / backend / mobile</code></td><td>同时支持服务端和端侧，SDK 一致性是重点，移动端需要离线模式</td></tr>
+        <tr><td><code>high throughput with low latency</code></td><td>评估链路不能依赖中心化强实时查询，目标 P99 &lt; 5 ms</td></tr>
+        <tr><td><code>explainability</code></td><td>不能只返回布尔值，需要保留决策证据，能回答"为什么开/为什么不开"</td></tr>
+      </table>
+      <div class="callout">
+        <strong>一句话总结：</strong>设计一个"控制面和数据面分离、五层缓存、本地评估优先、决策可回放"的特性开关平台。
+      </div>
+
+      <h2 id="what-they-want">2. 面试官真正想听什么</h2>
+
+      <h3 id="not-crud">2.1 不是 CRUD 平台，而是分发 + 评估系统</h3>
+      <p>如果答题重点放在"增删改查 Flag"上，通常会失分。管理后台只是控制面，真正难点在：</p>
+      <ul>
+        <li>配置怎么编译（Rule Compiler → immutable snapshot）</li>
+        <li>怎么分发到 SDK（push-first，Kafka + SSE/gRPC，delta sync）</li>
+        <li>怎么在运行时低成本评估（本地评估，不走网络，P99 &lt; 5 ms）</li>
+        <li>配置变更后怎么快速一致地生效（秒级传播，最终一致）</li>
+      </ul>
+
+      <h3 id="cache-arch">2.2 不是缓存题，而是五层缓存架构题</h3>
+      <p>题目直接点名 caching strategy，核心不是"用 Redis"，而是完整说出五层：</p>
+      <table>
+        <tr><th>层级</th><th>位置</th><th>关键特性</th></tr>
+        <tr><td><strong>L1</strong></td><td>SDK 进程内内存</td><td>热路径，P99 &lt; 5 ms，不走网络</td></tr>
+        <tr><td><strong>L2</strong></td><td>CDN 边缘节点</td><td>按 version 内容寻址，永不过期，分发成本近乎为零</td></tr>
+        <tr><td><strong>L3</strong></td><td>JVM / 评估节点共享内存</td><td>远程评估 API 节点的本地缓存</td></tr>
+        <tr><td><strong>L4</strong></td><td>Redis 集群</td><td>跨进程共享，按 scope 划分最新快照</td></tr>
+        <tr><td><strong>L5</strong></td><td>S3 / 对象存储</td><td>真正的 source of truth，持久化不可变版本</td></tr>
+      </table>
+
+      <h3 id="three-apis">2.3 不是单 API 设计，而是三类 API 设计</h3>
+      <ul>
+        <li><strong>管理 API</strong>：创建、修改、发布、回滚、审计</li>
+        <li><strong>分发 API</strong>：拉取 snapshot、拉取 delta、订阅变更流</li>
+        <li><strong>评估 API</strong>：单条评估、批量评估、Explain</li>
+      </ul>
+
+      <h3 id="reason-codes">2.4 Reason Code 要说全</h3>
+      <p>不少候选人只提"true/false"。评估结果必须带标准化 reason code：</p>
+      <table>
+        <tr><th>Code</th><th>触发条件</th></tr>
+        <tr><td><code>FLAG_NOT_FOUND</code></td><td>快照里没有这个 flagKey</td></tr>
+        <tr><td><code>FLAG_DISABLED</code></td><td>Flag 存在但 <code>enabled = false</code></td></tr>
+        <tr><td><code>RULE_MATCH</code></td><td>某条规则命中，且 rollout bucket 通过</td></tr>
+        <tr><td><code>ROLLOUT_NOT_INCLUDED</code></td><td>规则条件命中，但 subject 被灰度排除</td></tr>
+        <tr><td><code>DEFAULT_VALUE</code></td><td>无规则命中，返回 flag 默认值</td></tr>
+        <tr><td><code>PREREQUISITE_FAILED</code></td><td>前置 flag 未满足</td></tr>
+        <tr><td><code>STALE_SNAPSHOT_FALLBACK</code></td><td>网络故障，使用旧快照</td></tr>
+      </table>
+
+      <h3 id="observability">2.5 可观测性不是"加监控"就够了</h3>
+      <p>要覆盖这几个具体排障场景：</p>
+      <ul>
+        <li>发布失败</li>
+        <li>配置没传播到客户端（SDK 版本陈旧）</li>
+        <li>不同语言 SDK 评估结果不一致</li>
+        <li>某个用户为什么命中了某个规则</li>
+        <li>哪些 app 的快照最旧</li>
+      </ul>
+      <p>关键告警阈值：</p>
+      <ul>
+        <li>评估 P99 &gt; 5 ms → 立即告警</li>
+        <li>快照传播延迟 &gt; 10 s → 告警</li>
+        <li>L4 Redis 命中率 &lt; 85% → 调查</li>
+        <li>SDK 重连风暴 &gt; 50 次/秒 → 告警</li>
+      </ul>
+
+      <h2 id="evaluation">3. 现有方案主线评价</h2>
+      <p>当前方案的主线是正确的，已抓住这道题最重要的结构：</p>
+      <div class="card">
+        <ul>
+          <li>控制面和数据面分离 ✓</li>
+          <li>Push-first 分发 + Kafka 事件总线 ✓</li>
+          <li>Immutable snapshot + SHA-256 checksum + delta sync ✓</li>
+          <li>Local evaluation 优先，P99 &lt; 5 ms ✓</li>
+          <li>五层缓存架构 ✓</li>
+          <li>K8S 多区域部署，数据面 active-active ✓</li>
+          <li>Explainability 内建 ✓</li>
+        </ul>
+      </div>
+
+      <h3 id="highlights">3.1 最有价值的设计点</h3>
+
+      <h4>控制面 / 数据面分离</h4>
+      <p>这是全篇最重要的架构判断。管理侧强调一致性、审计、审批；评估侧强调高可用、低延迟、低成本。二者 SLO 和伸缩方式完全不同。</p>
+      <div class="callout green">数据面评估节点可以水平扩展到数百个 Pod，控制面只需要 2 个副本保证 HA 就够了。把他们分开是维持这个扩展比例的前提。</div>
+
+      <h4>Immutable Versioned Snapshot + SHA-256 Checksum</h4>
+      <p>相比"改一个 flag 就删一批缓存 key"，版本化快照的好处：</p>
+      <ul>
+        <li>失效模型简单：发布即新版本，不需要管旧版本</li>
+        <li>客户端切换版本原子化</li>
+        <li>CDN 按版本内容寻址，永不过期，不需要 purge</li>
+        <li>回滚天然支持</li>
+      </ul>
+      <div class="callout">我不会做细粒度 flag cache invalidation，而是把发布动作建模成新版本快照生成，让缓存切换变成版本切换问题。CDN 只缓存不可变对象，永远不需要 purge。</div>
+
+      <h4>SHA-256 灰度分桶</h4>
+      <pre><code>bucket = SHA-256(flagKey + ":" + subjectKey) % 10000
+enabled = bucket &lt; rolloutBps  // 0–10000，0.01% 精度</code></pre>
+      <ul>
+        <li>跨语言输出一致，不受 JVM/JS 整数溢出影响</li>
+        <li>均匀分布，10000 模数支持 0.01% 精度</li>
+        <li>同一 subject + flag 永远得到相同 bucket（稳定灰度）</li>
+      </ul>
+
+      <h4>Scope-Based Packaging</h4>
+      <p>按 <code>environment + appScope</code> 分包：SDK 内存只包含该应用实际用到的 flags，移动端启动更快，CDN 缓存压力也和单个 app 相关而非全局 catalog。</p>
+
+      <h2 id="order">4. 推荐的面试表达顺序</h2>
+      <ol>
+        <li><span class="number">1</span><strong>定义核心目标</strong>：P99 &lt; 5 ms 评估、规模可控、规则可解释</li>
+        <li><span class="number">2</span><strong>讲总原则</strong>：控制面和数据面分离</li>
+        <li><span class="number">3</span><strong>讲配置生命周期</strong>：编辑规则 → Rule Compiler → immutable snapshot (SHA-256) → Kafka → SDK 拉 delta → 原子切换</li>
+        <li><span class="number">4</span><strong>讲五层缓存</strong>：L1 SDK → L2 CDN → L3 JVM → L4 Redis → L5 S3，说清每层职责</li>
+        <li><span class="number">5</span><strong>讲评估路径</strong>：本地评估为主（P99 &lt; 5 ms），remote API 为辅</li>
+        <li><span class="number">6</span><strong>讲 Reason Code</strong>：FLAG_NOT_FOUND / FLAG_DISABLED / RULE_MATCH / ROLLOUT_NOT_INCLUDED / DEFAULT_VALUE</li>
+        <li><span class="number">7</span><strong>讲治理能力</strong>：审计、观测、Explain、回滚、紧急 kill switch</li>
+      </ol>
+      <div class="callout">
+        <strong>1 分钟总结版：</strong>我会把系统拆成控制面和数据面。控制面负责 Flag 管理、审批、发布和规则编译；数据面负责配置分发和高性能评估。配置发布后不直接改缓存，而是 Rule Compiler 生成按 appScope 切分的 immutable snapshot（SHA-256 校验），通过 Kafka 推送版本变更事件，SDK 收到后拉 delta 原子切换。运行时优先本地评估，SDK 进程内读内存，P99 &lt; 5 ms，不走网络。整个分发链路共五层缓存：SDK 进程内 → CDN 边缘 → JVM → Redis → S3。这样系统容量不会随全局 Flag 总数线性恶化，同时保留了回滚、审计、可解释和多语言 SDK 一致性。
+      </div>
+
+      <h2 id="followup" class="qa-section">5. 面试官可能继续追问的点</h2>
+
+      <h3 id="q51">Q5.1 为什么不用纯 Redis 存每个 flag</h3>
+      <div class="card">
+        <ul>
+          <li>单 flag 粒度缓存失效复杂，批量发布时一致性难保证</li>
+          <li>一次评估需要多个规则、segment、release 关联数据，拆散临时拼装很低效</li>
+          <li>回滚时需要把一批 key 同时回退，容易出现中间状态</li>
+          <li>Snapshot 是 immutable 的，可以放 CDN；Redis 里只是热缓存，不担心 cache invalidation</li>
+        </ul>
+      </div>
+
+      <h3 id="q52">Q5.2 为什么要 Rule Compiler</h3>
+      <div class="card">
+        <ul>
+          <li>后台可编辑规则通常是 DSL 或结构化 JSON，直接在线解析增加 CPU 成本</li>
+          <li>多语言 SDK 各自解析 DSL 容易出现行为分歧</li>
+          <li>编译后转换成 runtime-friendly 结构：match tree、priority list、hashed rollout plan</li>
+          <li>编译时可做静态校验：flag 依赖检测、规则冲突检测、segment 引用完整性</li>
+        </ul>
+      </div>
+      <div class="callout">编译器的目的是把"人可编辑"规则转换成"机器可高效稳定执行"规则，复杂度前移到发布阶段，运行时只做纯内存查找。</div>
+
+      <h3 id="q53">Q5.3 多语言 SDK 如何保证一致性</h3>
+      <div class="card">
+        <ul>
+          <li>统一 evaluation specification（文档约定每一步行为）</li>
+          <li>统一 hash 算法：SHA-256，固定 modulus 10000</li>
+          <li>统一 rule precedence：priority 升序，相同 priority FIFO</li>
+          <li>统一 null/empty 属性语义</li>
+          <li>Golden test vectors：每个 SDK 都跑同一套输入 → 期望输出的测试集，CI 强制不能偏离</li>
+        </ul>
+      </div>
+
+      <h3 id="q54">Q5.4 Explainability 如何避免日志爆炸</h3>
+      <div class="card">
+        <p><strong>两层策略：</strong></p>
+        <ul>
+          <li>默认采样记录 evaluation trace（例如 1%）</li>
+          <li>对指定 flagKey、subjectKey 或 traceId 开启 debug-on-demand 全量追踪，无需重新部署</li>
+          <li>subjectKey 只以 SHA-256 hash 形式存储，原始 ID 不入日志</li>
+        </ul>
+      </div>
+
+      <h3 id="q55">Q5.5 配置变更如何尽快生效又不压垮系统</h3>
+      <div class="card">
+        <ul>
+          <li>推送的不是全量配置，而是 <code>{ scope, newVersion, checksum }</code> 轻量事件</li>
+          <li>客户端只在版本变化后拉 delta（通常几 KB）</li>
+          <li>delta 不可用时回退全量 snapshot（从 CDN 拉，成本低）</li>
+          <li>紧急 kill switch 走专用高优先级通道，目标 3 秒内触达所有 SDK</li>
+        </ul>
+      </div>
+
+      <h3 id="q56">Q5.6 如何做多区域部署</h3>
+      <div class="card">
+        <table>
+          <tr><th>组件</th><th>策略</th></tr>
+          <tr><td>控制面</td><td>Active-standby，单主写入，读区域副本</td></tr>
+          <tr><td>数据面</td><td>Active-active，每个区域独立服务本区域流量</td></tr>
+          <tr><td>S3 Snapshot</td><td>跨区域 CRR，快照在所有区域可用</td></tr>
+          <tr><td>CDN</td><td>全球 PoP 节点，按 version 内容寻址</td></tr>
+          <tr><td>Redis</td><td>每个区域独立部署，从 S3 独立加载</td></tr>
+          <tr><td>Streaming Gateway</td><td>SDK 优先连本地区域网关</td></tr>
+        </table>
+        <p>这样数据面在控制面故障时完全不受影响，SDK 用 stale snapshot 继续工作。</p>
+      </div>
+
+      <h3 id="q57">Q5.7 SDK 在控制面/数据面全挂时怎么办</h3>
+      <div class="card">
+        <ul>
+          <li>SDK 持有 L1 in-process 缓存，永远不主动清空</li>
+          <li>移动端 SDK 把 snapshot 持久化到本地存储，下次启动直接 bootstrap</li>
+          <li>每个 flag 可以配置 <code>failOpen</code> 或 <code>failClosed</code> 策略</li>
+          <li>快照有 <code>expiresAt</code> 字段，过期后 SDK 按策略决定继续用还是 fail-safe</li>
+        </ul>
+      </div>
+
+      <h3 id="q58">Q5.8 如何防止评估结果泄露规则细节给客户端</h3>
+      <div class="card">
+        <ul>
+          <li>remote evaluation API 返回结果 + reason code，不返回规则条件本身</li>
+          <li>explain API 有访问控制，只有内部工具和授权调试人员可以调用</li>
+          <li>Web/移动端 SDK 调用 remote eval，不下载完整 snapshot</li>
+          <li>完整 snapshot（含规则）只下发给可信后端 SDK（通过签名 SDK key 鉴权）</li>
+        </ul>
+      </div>
+
+      <h2 id="strengthen">6. 可以补强的点</h2>
+      <p>当前方案已经比较完整，如果要冲更高分，主动补这几个方面：</p>
+
+      <h3>6.1 Segment 数据源更新策略</h3>
+      <ul>
+        <li>segment membership 是静态快照还是动态查询？</li>
+        <li>大人群导入（百万级 userId）如何异步构建 bitmap？</li>
+        <li>segment 更新是否触发重新编译和重新发布？</li>
+        <li>实时 segment（在线属性判断）和静态 segment（预计算人群包）如何共存？</li>
+      </ul>
+
+      <h3>6.2 依赖开关和冲突检测</h3>
+      <ul>
+        <li>flag prerequisite dependency（A 开启才允许 B 开启）</li>
+        <li>mutually exclusive flags（同一实验下 flag 互斥）</li>
+        <li>发布前静态校验冲突规则</li>
+      </ul>
+
+      <h3>6.3 渐进式发布和自动化回滚</h3>
+      <ul>
+        <li>渐进式 rollout：1% → 5% → 20% → 100%，每步暂停观测指标</li>
+        <li>自动化回滚：关联错误率/延迟 SLO，超阈值自动触发 rollback</li>
+      </ul>
+
+      <h3>6.4 实验平台边界</h3>
+      <p>Feature Flag 和 A/B Test 常常会被混问，主动划边界：</p>
+      <ul>
+        <li><strong>Feature Management</strong>：开关、灰度、定向、快速回滚</li>
+        <li><strong>Experimentation</strong>：统计显著性、实验分桶分析、指标归因</li>
+      </ul>
+      <p>二者可以共享分桶能力（同样是 SHA-256 hash bucketing），但实验分析能力不应全塞进这个系统。</p>
+
+      <h2 id="data-model">7. 可以进一步明确的数据模型</h2>
+      <table>
+        <tr><th>Entity</th><th>关键字段</th><th>说明</th></tr>
+        <tr><td><code>Application</code></td><td><code>appKey</code>, <code>name</code>, <code>owner</code></td><td>服务/应用注册</td></tr>
+        <tr><td><code>Flag</code></td><td><code>flagKey</code>, <code>type</code>, <code>enabled</code>, <code>defaultValue</code>, <code>status</code></td><td>开关元数据</td></tr>
+        <tr><td><code>FlagRule</code></td><td><code>ruleId</code>, <code>priority</code>, <code>conditions</code>, <code>rolloutBps</code>, <code>variant</code></td><td>命中规则；rolloutBps 0–10000</td></tr>
+        <tr><td><code>Segment</code></td><td><code>segmentKey</code>, <code>definition</code>, <code>version</code></td><td>复用人群或目标集合</td></tr>
+        <tr><td><code>ReleaseBinding</code></td><td><code>releaseId</code>, <code>flagKey</code>, <code>env</code></td><td>开关与发布关联</td></tr>
+        <tr><td><code>ConfigSnapshot</code></td><td><code>appKey</code>, <code>env</code>, <code>version</code>, <code>checksum</code>, <code>artifactUri</code></td><td>运行时不可变快照</td></tr>
+        <tr><td><code>AuditLog</code></td><td><code>actor</code>, <code>action</code>, <code>resourceKey</code>, <code>before</code>, <code>after</code>, <code>time</code></td><td>审计记录</td></tr>
+        <tr><td><code>EvaluationTrace</code></td><td><code>traceId</code>, <code>flagKey</code>, <code>subjectHash</code>, <code>reasonCode</code>, <code>rolloutBucket</code>, <code>snapshotVersion</code></td><td>采样的评估证据</td></tr>
+      </table>
+      <p><code>rolloutBps</code>（basis points，0–10000）比存 <code>rolloutPercentage</code>（0–100）精度更高，0.01% 粒度，存储更标准。</p>
+
+      <h2 id="flows">8. 核心流程图</h2>
+      <h3>8.1 发布链路</h3>
+      <pre><code>Admin / CI 修改规则
+    → Control Plane API
+    → Rule Compiler
+    → 生成新 Snapshot (SHA-256 checksum)
+    → 写入 S3 (L5) + 更新 Redis (L4)
+    → 发布 Kafka 事件
+    → Streaming Gateway 推送 {scope, version, checksum}
+    → SDK 拉 delta 或 full snapshot
+    → 原子切换 L1 in-process 缓存</code></pre>
+
+      <h3>8.2 评估链路（本地 SDK，主路径）</h3>
+      <pre><code>业务请求
+    → SDK 读 L1 in-process snapshot
+    → 按 priority 遍历规则
+    → 条件匹配？
+       否 → 继续下一条
+       是 → SHA-256 rollout bucket 计算
+           bucket &lt; rolloutBps？
+             是 → 返回 variant + RULE_MATCH
+             否 → ROLLOUT_NOT_INCLUDED，继续下一条
+    → 无更多规则 → 返回 defaultValue + DEFAULT_VALUE
+    → 异步批量上报 trace（采样）</code></pre>
+
+      <div class="callout amber">
+        <strong>面试时要强调：</strong>发布链路重点是版本生产与传播（最终一致，秒级生效）；评估链路重点是低延迟和稳定性（P99 &lt; 5 ms，不走网络）。
+      </div>
+
+      <h2 id="tradeoffs">9. 这份设计最值得强调的 Trade-off</h2>
+
+      <h3>9.1 最终一致性 ↔ 低延迟和高可用</h3>
+      <p>客户端配置更新不是强一致（push 到达需要秒级），这是可以接受的。Feature flag 天然适合秒级传播 + 最终一致 + 本地容错。强一致的代价是：每次评估都要访问中心服务，P99 无法保证，可用性绑定到控制面。</p>
+
+      <h3>9.2 预编译和批量分发 ↔ 运行时简单</h3>
+      <p>复杂度前移到发布阶段，收益是：运行时 evaluation 是纯内存操作无 CPU 密集型解析；SDK 逻辑更稳定；多语言一致性更容易保障；规则冲突在编译时就能发现。</p>
+
+      <h3>9.3 Explainability 内建 ↔ 存储和实现成本</h3>
+      <p>增加 trace schema 设计和 Elasticsearch 存储成本，增加 PII 脱敏成本。但对排障、合规、灰度回放、多语言一致性验证都非常有价值。</p>
+
+      <h3>9.4 CDN 作为 L2 ↔ 架构复杂度</h3>
+      <p>CDN 对内容寻址的 immutable object 命中率接近 100%。上千个 SDK 同时拉新版本快照时，CDN 承担几乎全部带宽压力，S3 和 origin 服务器不受冲击。这是大规模分发场景的关键，代价是多了一层 CDN 配置和版本路由逻辑。</p>
+
+      <h2 id="conclusion">11. 最终结论</h2>
+      <p>这道题的高分关键，不在于把模块列全，而在于你有没有抓住这 5 个核心判断：</p>
+      <ol>
+        <li><strong>控制面和数据面必须分离</strong> — 不同 SLO、伸缩方式、一致性要求</li>
+        <li><strong>运行时以本地评估为主</strong> — P99 &lt; 5 ms，不走网络，SDK in-process 内存操作</li>
+        <li><strong>缓存管理以版本化 snapshot 为核心</strong> — 不做单 flag 失效，发布 = 新版本对象</li>
+        <li><strong>五层缓存各司其职</strong> — L1→L2→L3→L4→L5，每层保护下一层</li>
+        <li><strong>Explainability 必须是评估协议的一部分</strong> — reason code、rollout bucket、matched rule 全部内建</li>
+      </ol>
+
+      <div class="callout">
+        <strong>最终收口一句话：</strong>这套设计的关键不是把 Flag 存起来，而是把规则编译成 SHA-256 校验的版本化快照，按 appScope 分发到 SDK，在进程内完成绝大多数评估。五层缓存从 SDK 内存到 S3 逐层保底，让系统容量不随全局 Flag 总数线性恶化。同时每次评估都带标准化 reason code，让排障、合规审计和多语言一致性验证有可靠的数据基础。
+      </div>
+
+      <p>当前方案已经具备高分答案的骨架。如果继续优化，最值得补的是：</p>
+      <ul>
+        <li>Segment 数据源更新策略（静态 vs 动态）</li>
+        <li>渐进式发布和自动化回滚</li>
+        <li>多语言 SDK 一致性 golden test vectors</li>
+        <li>Explain trace 的采样与调试策略</li>
+        <li>实验平台的边界划定</li>
+      </ul>
+
+      <p class="footer">Feature Management Service 面试题解析 · 更新于 2026-05</p>
+    </main>
+  </div>
+</div>
+</body>
+</html>

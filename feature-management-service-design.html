@@ -17,413 +17,543 @@
       --code-bg: #101826;
       --code-ink: #edf5ff;
       --table-head: #eef4f6;
-      --shadow: 0 16px 40px rgba(23, 32, 51, 0.08);
+      --shadow: 0 16px 40px rgba(23,32,51,.08);
     }
-
-    * {
-      box-sizing: border-box;
-    }
-
-    html {
-      scroll-behavior: smooth;
-    }
-
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
     body {
       margin: 0;
-      font-family: "Segoe UI", "Helvetica Neue", Arial, sans-serif;
-      color: var(--ink);
+      font-family: "Segoe UI","Helvetica Neue", Arial, sans-serif;
+      color: var(--ink); line-height: 1.68;
       background:
-        linear-gradient(120deg, rgba(31, 122, 140, 0.12), transparent 36%),
+        linear-gradient(120deg, rgba(31,122,140,.12), transparent 36%),
         linear-gradient(180deg, #fbfcfd 0%, var(--bg) 100%);
-      line-height: 1.68;
     }
-
-    .page {
-      max-width: 1240px;
-      margin: 0 auto;
-      padding: 36px 22px 64px;
-    }
-
+    .page { max-width: 1240px; margin: 0 auto; padding: 36px 22px 64px; }
     .hero {
-      border-left: 8px solid var(--accent);
-      padding: 26px 30px;
-      background: var(--panel);
-      box-shadow: var(--shadow);
-      margin-bottom: 24px;
+      border-left: 8px solid var(--accent); padding: 28px 32px;
+      background: var(--panel); box-shadow: var(--shadow); margin-bottom: 24px;
     }
-
-    .hero h1 {
-      margin: 0 0 10px;
-      font-size: 2.2rem;
-      line-height: 1.15;
-      letter-spacing: 0;
-    }
-
-    .hero p {
-      max-width: 920px;
-      margin: 0;
-      color: var(--muted);
-      font-size: 1.02rem;
-    }
-
-    .layout {
-      display: grid;
-      grid-template-columns: 290px minmax(0, 1fr);
-      gap: 22px;
-      align-items: start;
-    }
-
-    .toc {
-      position: sticky;
-      top: 18px;
-      background: var(--panel);
-      border: 1px solid var(--line);
-      box-shadow: var(--shadow);
-      padding: 18px 18px;
-      max-height: calc(100vh - 36px);
-      overflow: auto;
-    }
-
-    .toc h2 {
-      margin: 0 0 12px;
-      font-size: 0.82rem;
-      text-transform: uppercase;
-      color: var(--accent-strong);
-      letter-spacing: 0.08em;
-      border: 0;
-      padding: 0;
-    }
-
-    .toc a {
-      display: block;
-      color: var(--muted);
-      text-decoration: none;
-      padding: 6px 0;
-      font-size: 0.92rem;
-      border-top: 1px solid rgba(217, 222, 231, 0.65);
-    }
-
-    .toc a:hover {
-      color: var(--accent-strong);
-    }
-
-    main {
-      min-width: 0;
-      background: var(--panel);
-      border: 1px solid var(--line);
-      box-shadow: var(--shadow);
-      padding: 30px 36px 46px;
-    }
-
-    h2 {
-      margin: 34px 0 14px;
-      padding-bottom: 8px;
-      border-bottom: 2px solid var(--accent-soft);
-      color: var(--accent-strong);
-      font-size: 1.45rem;
-      letter-spacing: 0;
-    }
-
-    h3 {
-      margin: 24px 0 10px;
-      color: #263a53;
-      font-size: 1.08rem;
-      letter-spacing: 0;
-    }
-
-    p {
-      margin: 0 0 14px;
-    }
-
-    ul,
-    ol {
-      margin: 0 0 18px 24px;
-      padding: 0;
-    }
-
-    li {
-      margin: 5px 0;
-    }
-
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      margin: 16px 0 22px;
-      font-size: 0.94rem;
-      overflow-wrap: anywhere;
-    }
-
-    th,
-    td {
-      border: 1px solid var(--line);
-      padding: 9px 10px;
-      vertical-align: top;
-    }
-
-    th {
-      background: var(--table-head);
-      color: #25364c;
-      text-align: left;
-    }
-
-    code {
-      font-family: Consolas, "Courier New", monospace;
-      font-size: 0.9em;
-      background: var(--accent-soft);
-      color: var(--accent-strong);
-      border-radius: 4px;
-      padding: 2px 5px;
-    }
-
-    pre {
-      margin: 16px 0 20px;
-      padding: 16px 18px;
-      overflow-x: auto;
-      background: var(--code-bg);
-      color: var(--code-ink);
-      border-radius: 6px;
-    }
-
-    pre code {
-      padding: 0;
-      background: transparent;
-      color: inherit;
-    }
-
-    .mermaid {
-      margin: 16px 0 22px;
-      padding: 12px;
-      background: #ffffff;
-      border: 1px solid var(--line);
-      overflow-x: auto;
-    }
-
-    .note {
-      margin: 16px 0 20px;
-      padding: 14px 16px;
-      background: var(--accent-soft);
-      border-left: 4px solid var(--accent);
-      color: #263a53;
-    }
-
-    @media (max-width: 980px) {
-      .layout {
-        grid-template-columns: 1fr;
-      }
-
-      .toc {
-        position: static;
-        max-height: none;
-      }
-
-      main {
-        padding: 24px 20px 34px;
-      }
-
-      .hero {
-        padding: 22px 20px;
-      }
-
-      .hero h1 {
-        font-size: 1.75rem;
-      }
+    .hero h1 { margin: 0 0 10px; font-size: 2.1rem; line-height: 1.15; }
+    .hero p { max-width: 920px; margin: 0 0 14px; color: var(--muted); font-size: 1.01rem; }
+    .tags { display: flex; flex-wrap: wrap; gap: 8px; }
+    .tag { background: var(--accent-soft); color: var(--accent-strong);
+      border: 1px solid rgba(31,122,140,.25); border-radius: 20px;
+      padding: 3px 13px; font-size: .83rem; font-weight: 600; }
+    .layout { display: grid; grid-template-columns: 290px minmax(0,1fr); gap: 22px; align-items: start; }
+    .toc { position: sticky; top: 18px; background: var(--panel);
+      border: 1px solid var(--line); padding: 20px 18px; box-shadow: var(--shadow); }
+    .toc h2 { margin: 0 0 12px; font-size: .85rem; text-transform: uppercase;
+      letter-spacing: .08em; color: var(--accent); }
+    .toc a { display: block; color: var(--muted); text-decoration: none;
+      padding: 5px 0; border-bottom: 1px solid var(--line); font-size: .87rem; }
+    .toc a:hover { color: var(--accent); }
+    .toc .sub { padding-left: 12px; font-size: .81rem; }
+    .content { background: var(--panel); border: 1px solid var(--line);
+      padding: 28px 34px 44px; box-shadow: var(--shadow); overflow: hidden; }
+    h2 { margin-top: 32px; margin-bottom: 12px; font-size: 1.55rem;
+      color: var(--accent-strong); border-bottom: 2px solid var(--accent-soft); padding-bottom: 7px; }
+    h3 { margin-top: 20px; margin-bottom: 9px; font-size: 1.1rem; color: #145c6b; }
+    p { margin: 0 0 13px; }
+    ul, ol { margin: 0 0 16px 22px; padding: 0; }
+    li { margin: 5px 0; }
+    code { font-family: Consolas,"Courier New",monospace; font-size: .9em;
+      background: #e5f3f5; padding: 2px 6px; border-radius: 5px; color: #145c6b; }
+    pre { margin: 14px 0 18px; padding: 16px 20px; background: var(--code-bg);
+      color: var(--code-ink); overflow-x: auto; font-size: .88em; line-height: 1.6; }
+    pre code { background: transparent; padding: 0; color: inherit; }
+    .card { background: #f8fdfe; border: 1px solid rgba(31,122,140,.2);
+      padding: 16px 18px 4px; margin: 12px 0 18px; }
+    .callout { margin: 14px 0 18px; padding: 14px 18px; border-left: 4px solid var(--accent);
+      background: #eaf7f9; font-style: italic; color: #145c6b; }
+    .note { background: #fffde7; border-left: 4px solid #f9a825;
+      padding: 12px 16px; margin: 12px 0 18px; font-size: .93rem; color: #5d4037; }
+    table { width: 100%; border-collapse: collapse; margin: 12px 0 18px; font-size: .91rem; }
+    th { background: var(--table-head); color: var(--accent-strong); text-align: left;
+      padding: 9px 12px; border-bottom: 2px solid var(--line); }
+    td { padding: 8px 12px; border-bottom: 1px solid var(--line); vertical-align: top; }
+    tr:last-child td { border-bottom: none; }
+    tr:nth-child(even) td { background: rgba(31,122,140,.04); }
+    .badge { display: inline-block; padding: 2px 10px; border-radius: 10px;
+      font-size: .79rem; font-weight: 700; background: var(--accent-soft); color: var(--accent-strong); }
+    .footer { margin-top: 24px; color: var(--muted); font-size: .88rem; }
+    .mermaid-wrap { background: #fff; border: 1px solid var(--line); padding: 12px; overflow-x: auto; margin: 12px 0 18px; }
+    @media(max-width:960px){
+      .layout { grid-template-columns: 1fr; }
+      .toc { position: static; }
+      .content { padding: 22px 18px 30px; }
     }
   </style>
 </head>
 <body>
-  <div class="page">
-    <section class="hero">
-      <h1>Feature Management Service Design</h1>
-      <p>A practical take-home design for a Spring Boot based feature flag platform, balancing production architecture with realistic demo scope.</p>
-    </section>
+<div class="page">
+  <section class="hero">
+    <h1>Feature Management Service Design</h1>
+    <p>Practical design document for a take-home interview project. Covers production-grade architecture, demo implementation scope, database schema, five-level cache model, evaluation engine with all reason codes, and a stage-by-stage implementation plan.</p>
+    <div class="tags">
+      <span class="tag">Spring Boot 3</span>
+      <span class="tag">5-Level Cache</span>
+      <span class="tag">SHA-256 Rollout</span>
+      <span class="tag">Immutable Snapshot</span>
+      <span class="tag">Explain API</span>
+      <span class="tag">Vue Frontend</span>
+      <span class="tag">Java SDK</span>
+    </div>
+  </section>
 
-    <div class="layout">
-      <aside class="toc">
-        <h2>Contents</h2>
-        <a href="#purpose">1. Purpose</a>
-        <a href="#requirements">2. Requirement Summary</a>
-        <a href="#philosophy">3. Design Philosophy</a>
-        <a href="#architecture">4. High-Level Architecture</a>
-        <a href="#scope">5. Production vs Demo Scope</a>
-        <a href="#demo-scope">6. Recommended Demo Scope</a>
-        <a href="#backend">7. Backend Design</a>
-        <a href="#database">8. Database Design</a>
-        <a href="#snapshot-cache">9. Snapshot and Cache Design</a>
-        <a href="#evaluation">10. Evaluation Model</a>
-        <a href="#explainability">11. Explainability Design</a>
-        <a href="#api">12. API Design</a>
-        <a href="#vue">13. Vue Frontend Design</a>
-        <a href="#java-sdk">14. Java SDK Example</a>
-        <a href="#frontend-sdk">15. Frontend SDK Example</a>
-        <a href="#testing">16. Testing Strategy</a>
-        <a href="#observability">17. Observability Design</a>
-        <a href="#security">18. Security and Governance</a>
-        <a href="#plan">19. Implementation Plan</a>
-        <a href="#effort">20. Estimated Effort</a>
-        <a href="#recommendation">21. Final Recommendation</a>
-      </aside>
+  <div class="layout">
+    <aside class="toc">
+      <h2>Contents</h2>
+      <a href="#purpose">1. Purpose</a>
+      <a href="#requirements">2. Requirements</a>
+      <a href="#philosophy">3. Design Philosophy</a>
+      <a href="#architecture">4. Architecture</a>
+      <a href="#scope">5. Production vs Demo Scope</a>
+      <a href="#demo-scope">6. Demo Scope</a>
+      <a href="#backend">7. Backend Design</a>
+      <a href="#database">8. Database Design</a>
+      <a class="sub" href="#tables">  8.3 Core Tables</a>
+      <a href="#cache">9. Snapshot and Cache</a>
+      <a class="sub" href="#snapshot-structure">  9.1 Snapshot Structure</a>
+      <a class="sub" href="#cache-levels">  9.2 Five-Level Cache</a>
+      <a href="#eval">10. Evaluation Engine</a>
+      <a class="sub" href="#reason-codes">  10.2 Reason Codes</a>
+      <a class="sub" href="#rollout">  10.3 Rollout Hashing</a>
+      <a href="#explain">11. Explainability</a>
+      <a href="#api">12. API Design</a>
+      <a href="#frontend">13. Vue Frontend</a>
+      <a href="#java-sdk">14. Java SDK</a>
+      <a href="#ts-sdk">15. TypeScript SDK</a>
+      <a href="#testing">16. Testing Strategy</a>
+      <a href="#observability">17. Observability</a>
+      <a href="#security">18. Security</a>
+      <a href="#plan">19. Implementation Plan</a>
+      <a href="#effort">20. Estimated Effort</a>
+      <a href="#recommendation">21. Final Recommendation</a>
+    </aside>
 
-      <main>
-        <h2 id="purpose">1. Purpose</h2>
-        <p>This document describes a practical design for a Feature Management Service for an e-commerce platform. The system manages feature flags across web portals, backend services, and mobile clients. It needs to support low-latency evaluation, controlled rollout, clear ownership, and explainable decisions.</p>
-        <p>Because this is a take-home interview project, the design intentionally separates what a production-grade system should support, what the demo implementation should build, and what should be documented but not implemented in the demo.</p>
-        <div class="note">The goal of the demo is not to rebuild LaunchDarkly. The goal is to show strong engineering judgment: clear architecture, useful APIs, deterministic evaluation behavior, reasonable caching, test coverage, and a path from demo to production.</div>
+    <main class="content">
 
-        <h2 id="requirements">2. Requirement Summary</h2>
-        <ul>
-          <li>Thousands of feature flags across more than 100 applications and services</li>
-          <li>Web, backend, and mobile clients</li>
-          <li>High-throughput and low-latency flag evaluation</li>
-          <li>Cost-effective caching as the feature catalog grows</li>
-          <li>A client SDK model that is easy to integrate</li>
-          <li>Management, evaluation, and supporting APIs</li>
-          <li>Observability and debugging support</li>
-          <li>Explainability for each decision, including who, where, which rule, which release, and which snapshot version</li>
-        </ul>
+      <h2 id="purpose">1. Purpose</h2>
+      <p>This document describes a practical design for a Feature Management Service for an e-commerce platform. The system manages feature flags across web portals, backend services, and mobile clients. It needs to support low-latency evaluation (<strong>P99 &lt; 5 ms</strong> for in-process evaluation), controlled rollout, clear ownership, and explainable decisions.</p>
+      <p>Because this is a take-home interview project, the design intentionally separates:</p>
+      <ul>
+        <li>What a production-grade system should support</li>
+        <li>What the demo implementation should build</li>
+        <li>What should be documented but not implemented in the demo</li>
+      </ul>
+      <div class="callout">The goal of the demo is not to rebuild LaunchDarkly. The goal is to show strong engineering judgment: clear architecture, useful APIs, deterministic evaluation behavior, a well-designed cache model, test coverage, and a path from demo to production.</div>
 
-        <h2 id="philosophy">3. Design Philosophy</h2>
-        <p>The most important design choice is to split the system into two planes. The control plane manages authoring, validation, publishing, audit, and governance. The data plane serves flag evaluation. It should be fast, highly available, cache-friendly, and independent from the control plane during normal runtime.</p>
-        <p>For the demo, this split can be represented inside a single Spring Boot application. The code should still keep the boundaries clear through packages and service responsibilities.</p>
+      <h2 id="requirements">2. Requirement Summary</h2>
+      <ul>
+        <li>Thousands of feature flags across more than 100 applications and services</li>
+        <li>Web, backend, and mobile clients</li>
+        <li>High-throughput and low-latency evaluation — <strong>P99 &lt; 5 ms</strong> for in-process evaluation</li>
+        <li>Five-level cache hierarchy to keep distribution cost low as the catalog grows</li>
+        <li>A client SDK model that is easy to integrate across multiple languages</li>
+        <li>Management, distribution, evaluation, and explain APIs</li>
+        <li>Observability and debugging support</li>
+        <li>Explainability: which subject, which region, which rule, which rollout bucket, which snapshot version</li>
+      </ul>
 
-        <h2 id="architecture">4. High-Level Architecture</h2>
-        <div class="mermaid">
+      <h2 id="philosophy">3. Design Philosophy</h2>
+      <p>The most important design choice is to split the system into two planes.</p>
+      <p>The <strong>control plane</strong> manages authoring, validation, publishing, audit, and governance. It can tolerate higher latency and stronger consistency requirements.</p>
+      <p>The <strong>data plane</strong> serves flag evaluation. It should be fast, highly available, cache-friendly, and independent from the control plane during normal runtime.</p>
+      <p>Key design decisions carried through both demo and production:</p>
+      <ul>
+        <li>Immutable, versioned, SHA-256-checksummed snapshots as the runtime unit — not individual flag records</li>
+        <li>Scope-based packaging by <code>environment + appKey</code></li>
+        <li>SHA-256-based percentage rollout hashing with 0.01% granularity (modulus 10,000)</li>
+        <li>Standardized reason codes in every evaluation response</li>
+        <li>Explainability as part of the evaluation contract, not a post-hoc log</li>
+      </ul>
+
+      <h2 id="architecture">4. High-Level Architecture</h2>
+      <h3>Production Architecture</h3>
+      <div class="mermaid-wrap">
+        <pre class="mermaid">
+flowchart TD
+    subgraph Edge
+        WAF["WAF / Firewall"]
+        CDN["CDN (L2)"]
+        LB["Load Balancer"]
+        GW["API Gateway"]
+    end
+    subgraph CP["Control Plane"]
+        AdminUI["Admin Console / CI"]
+        MgmtAPI["Management API"]
+        Compiler["Rule Compiler"]
+        MetaDB["PostgreSQL"]
+        Kafka["Kafka Event Bus"]
+    end
+    subgraph DP["Data Plane"]
+        EvalAPI["Evaluation API"]
+        StreamGW["Streaming Gateway (SSE/gRPC)"]
+        SnapshotStore["S3 (L5)"]
+        Redis["Redis (L4)"]
+    end
+    subgraph SDK["SDK (L1)"]
+        Java["Java"] & Go["Go"] & Js["Node.js"] & iOS["iOS"] & Web["Web"]
+    end
+    WAF --> LB --> GW
+    GW --> MgmtAPI & EvalAPI & StreamGW
+    AdminUI --> MgmtAPI
+    MgmtAPI --> MetaDB & Compiler
+    Compiler --> SnapshotStore & Kafka
+    SnapshotStore --> CDN --> SDK
+    Kafka --> StreamGW --> SDK
+    EvalAPI --> Redis --> SnapshotStore
+        </pre>
+      </div>
+
+      <h3>Demo Architecture</h3>
+      <div class="mermaid-wrap">
+        <pre class="mermaid">
 flowchart LR
-    A["Admin UI / API Client"] --> B["Management API"]
-    B --> C["Metadata Database"]
-    B --> D["Publisher"]
-    D --> E["Versioned Snapshot Store"]
+    A["Admin UI (Vue)"] --> B["Management API"]
+    B --> C["H2 Database"]
+    B --> D["PublishService"]
+    D --> E["In-Memory Snapshot Cache (L3)"]
     E --> F["Evaluation API"]
-    F --> G["In-Memory Snapshot Cache"]
+    F --> G["Explain Response"]
     H["Java SDK Example"] --> F
-    I["Frontend SDK Example"] --> F
-    F --> J["Evaluation Explain Response"]
-        </div>
-        <p>Production architecture would extend this with a streaming distribution gateway, edge caches, multi-region deployment, Redis, object storage, audit pipelines, and OpenTelemetry.</p>
-        <p>The demo should keep the architecture simple: one Spring Boot backend, one local relational database, one in-memory snapshot cache, one Vue admin frontend, one Java SDK example, one frontend SDK example, and focused unit and integration tests.</p>
+    I["TypeScript SDK Example"] --> F
+        </pre>
+      </div>
 
-        <h2 id="scope">5. Production vs Demo Scope</h2>
-        <table>
-          <thead><tr><th>Area</th><th>Production Design</th><th>Demo Implementation</th></tr></thead>
-          <tbody>
-            <tr><td>Backend</td><td>Control plane and data plane can be separately deployed</td><td>Single Spring Boot application with clear package boundaries</td></tr>
-            <tr><td>Database</td><td>Oracle</td><td>Local H2 or SQLite for easy setup</td></tr>
-            <tr><td>Cache</td><td>SDK local cache, Redis, edge cache, immutable snapshots</td><td>In-memory snapshot cache in the backend</td></tr>
-            <tr><td>Config distribution</td><td>SSE, WebSocket, or gRPC streaming with delta sync</td><td>Manual publish creates a new snapshot version</td></tr>
-            <tr><td>SDK</td><td>Java, Go, Node.js, iOS, Android, Web</td><td>Java SDK example and small frontend SDK example</td></tr>
-            <tr><td>Frontend</td><td>Full admin console with RBAC and approval workflows</td><td>Vue UI for managing flags, rules, publishing, and testing evaluation</td></tr>
-            <tr><td>Observability</td><td>OpenTelemetry, metrics, tracing, audit pipeline</td><td>Structured logs, health endpoint, basic metrics-ready design</td></tr>
-            <tr><td>Security</td><td>RBAC, environment-level permissions, signed SDK keys</td><td>Simple API key or no auth, documented as demo scope</td></tr>
-            <tr><td>Explainability</td><td>Stored sampled traces and debug-on-demand traces</td><td>Explain API returns decision details synchronously</td></tr>
-          </tbody>
-        </table>
+      <h2 id="scope">5. Production vs Demo Scope</h2>
+      <table>
+        <tr><th>Area</th><th>Production Design</th><th>Demo Implementation</th></tr>
+        <tr><td>Backend</td><td>Separately deployed control plane and data plane</td><td>Single Spring Boot application with clear package boundaries</td></tr>
+        <tr><td>Database</td><td>Oracle / PostgreSQL</td><td>H2 in-memory (Oracle config documented)</td></tr>
+        <tr><td>Cache</td><td>L1 SDK + L2 CDN + L3 JVM + L4 Redis + L5 S3</td><td>In-memory snapshot cache (L3) in backend</td></tr>
+        <tr><td>Cache invalidation</td><td>Push-first via Kafka + Streaming Gateway, delta sync</td><td>Manual publish; cache reloads on next request</td></tr>
+        <tr><td>Config distribution</td><td>SSE / WebSocket / gRPC + delta sync</td><td>SDK calls evaluation API directly</td></tr>
+        <tr><td>SDK</td><td>Java, Go, Node.js, iOS, Android, Web</td><td>Java + TypeScript SDK examples</td></tr>
+        <tr><td>Frontend</td><td>Full admin console with RBAC and approval workflows</td><td>Vue UI: flag list, rule editor, publish, evaluation playground</td></tr>
+        <tr><td>Observability</td><td>OpenTelemetry, Prometheus, Grafana, ELK, alerting</td><td>Structured logs, health endpoint, metrics-ready code</td></tr>
+        <tr><td>Security</td><td>RBAC, signed SDK keys, WAF, TLS, PII hashing</td><td>Static API key or no auth — documented as demo scope</td></tr>
+        <tr><td>Explainability</td><td>Sampled traces + debug-on-demand in Elasticsearch</td><td>Explain API returns full decision details synchronously</td></tr>
+        <tr><td>Deployment</td><td>K8S multi-region, active-active data plane</td><td>Local JAR or Docker Compose</td></tr>
+      </table>
 
-        <h2 id="demo-scope">6. Recommended Demo Scope</h2>
-        <ol>
-          <li>Spring Boot backend</li>
-          <li>Local database using H2 or SQLite</li>
-          <li>REST APIs for flag management, publishing, evaluation, and explanation</li>
-          <li>In-memory snapshot cache keyed by <code>environment + appKey + version</code></li>
-          <li>Basic Vue frontend for managing and testing flags</li>
-          <li>Java SDK example</li>
-          <li>Frontend SDK example</li>
-          <li>Java unit tests for the evaluation engine</li>
-          <li>A short README explaining production extensions</li>
-        </ol>
-        <p>Recommended non-goals for the demo include multi-region deployment, real-time streaming distribution, Redis, Oracle-specific stored procedures, full RBAC, multi-language SDK matrix, full observability stack, and large-scale segment import.</p>
+      <h2 id="demo-scope">6. Recommended Demo Scope</h2>
+      <ol>
+        <li>Spring Boot backend (Java 17)</li>
+        <li>H2 local database with production-style schema</li>
+        <li>REST APIs for flag management, publishing, evaluation, and explanation</li>
+        <li>In-memory snapshot cache keyed by <code>environment:appKey</code></li>
+        <li>Evaluation engine with all five reason codes</li>
+        <li>Vue frontend (flag list, rule editor, publish button, evaluation playground with explain output)</li>
+        <li>Java SDK example</li>
+        <li>TypeScript frontend SDK example</li>
+        <li>Java unit tests for the evaluation engine</li>
+        <li>README documenting production extensions</li>
+      </ol>
 
-        <h2 id="backend">7. Backend Design</h2>
-        <h3>7.1 Should the Demo Use Spring Boot?</h3>
-        <p>Yes. A Spring Boot backend is a good fit for this interview project because it is common in enterprise e-commerce systems, maps well to Oracle in production, supports REST APIs and persistence cleanly, and makes the demo easy to run and review.</p>
-        <pre><code>com.example.featureflag
+      <h2 id="backend">7. Backend Design</h2>
+      <h3>Package Structure</h3>
+      <pre><code>com.example.featureflag
   api
     FlagController
+    RuleController
     EvaluationController
     PublishController
+    AuditController
   application
     FlagService
+    RuleService
     PublishService
     EvaluationService
+    ExplainService
   domain
     Flag
     FlagRule
     Segment
     ConfigSnapshot
     EvaluationResult
+    EvaluationDetails
+    ReasonCode  // FLAG_NOT_FOUND | FLAG_DISABLED | RULE_MATCH
+                // | ROLLOUT_NOT_INCLUDED | DEFAULT_VALUE
   infrastructure
     repository
+      FlagRepository
+      RuleRepository
+      SnapshotRepository
+      AuditLogRepository
     cache
+      SnapshotCache  // ConcurrentHashMap, key = "env:appKey"
     persistence
-  sdkexample</code></pre>
+      SchemaInitializer
+  sdkexample
+    java
+    frontend</code></pre>
 
-        <h2 id="database">8. Database Design</h2>
-        <h3>8.1 Production Database</h3>
-        <p>Production should use Oracle. It is suitable for strong consistency, auditability, transactional publishing, and integration with enterprise data governance. The domain layer should avoid Oracle-specific logic so that persistence details remain isolated behind repository interfaces.</p>
-        <h3>8.2 Demo Database</h3>
-        <p>For the demo, use H2 or SQLite. H2 is the recommended choice for a Spring Boot and JPA based project because it needs no external database and works well with tests.</p>
-        <pre><code>local  -&gt; H2 or SQLite
-prod   -&gt; Oracle configuration placeholder</code></pre>
-        <h3>8.3 Core Tables</h3>
-        <table>
-          <thead><tr><th>Table</th><th>Purpose</th><th>Important Fields</th></tr></thead>
-          <tbody>
-            <tr><td><code>ff_application</code></td><td>Application or service scopes</td><td><code>app_key</code>, <code>name</code>, <code>owner</code></td></tr>
-            <tr><td><code>ff_flag</code></td><td>Flag metadata</td><td><code>flag_key</code>, <code>app_key</code>, <code>environment</code>, <code>type</code>, <code>default_value</code>, <code>enabled</code>, <code>release_key</code></td></tr>
-            <tr><td><code>ff_rule</code></td><td>Targeting and rollout rules</td><td><code>flag_id</code>, <code>priority</code>, <code>condition_json</code>, <code>rollout_percentage</code>, <code>variation_value</code></td></tr>
-            <tr><td><code>ff_segment</code></td><td>Reusable user or entity targeting definitions</td><td><code>segment_key</code>, <code>definition_json</code></td></tr>
-            <tr><td><code>ff_config_snapshot</code></td><td>Published runtime snapshots</td><td><code>app_key</code>, <code>environment</code>, <code>version</code>, <code>checksum</code>, <code>snapshot_json</code></td></tr>
-            <tr><td><code>ff_audit_log</code></td><td>Management and publish actions</td><td><code>actor</code>, <code>action</code>, <code>resource_type</code>, <code>before_json</code>, <code>after_json</code></td></tr>
-          </tbody>
-        </table>
+      <h2 id="database">8. Database Design</h2>
+      <h3>8.1 Production Database</h3>
+      <p>Production should use Oracle or PostgreSQL. Keep all SQL behind repository interfaces so the database can be swapped without touching domain logic.</p>
 
-        <h2 id="snapshot-cache">9. Snapshot and Cache Design</h2>
-        <p>The runtime evaluation path should not query normalized flag and rule tables on every request. Publishing creates an immutable snapshot, and the backend keeps the latest snapshot in memory.</p>
-        <pre><code>cache key = environment + ":" + appKey
-cache value = latest ConfigSnapshot</code></pre>
-        <p>Production can extend this with SDK-side local cache, Redis, object storage, delta sync, and streaming version notifications.</p>
+      <h3>8.2 Demo Database</h3>
+      <pre><code># application-local.yml
+spring:
+  datasource.url: jdbc:h2:mem:featureflag
+  h2.console.enabled: true
 
-        <h2 id="evaluation">10. Evaluation Model</h2>
-        <p>Evaluation loads the latest snapshot by <code>environment + appKey</code>, finds the requested flag, applies enabled state, evaluates rules by priority, applies deterministic rollout, and returns either the matched variation or the default value.</p>
-        <pre><code>bucket = hash(flagKey + ":" + subjectKey) % 100
-enabled if bucket &lt; rolloutPercentage</code></pre>
-        <p>This guarantees stable rollout behavior for the same user and flag.</p>
+# application-prod.yml (placeholder)
+spring:
+  datasource.url: jdbc:oracle:thin:@//host:1521/service</code></pre>
 
-        <h2 id="explainability">11. Explainability Design</h2>
-        <p>Explainability should be part of the evaluation contract. The demo should implement <code>POST /api/v1/evaluations:explain</code> and return the final value, reason code, matched rule, matched conditions, rollout bucket, release key, snapshot version, and evaluation time.</p>
-        <p>For production, evaluation traces should be sampled by default. Full traces should be enabled on demand for selected flags, users, or trace IDs.</p>
+      <h3 id="tables">8.3 Core Tables</h3>
 
-        <h2 id="api">12. API Design</h2>
-        <h3>12.1 Management APIs</h3>
-        <table>
-          <thead><tr><th>Method</th><th>Endpoint</th><th>Purpose</th></tr></thead>
-          <tbody>
-            <tr><td><code>POST</code></td><td><code>/api/v1/apps</code></td><td>Create an application scope</td></tr>
-            <tr><td><code>GET</code></td><td><code>/api/v1/apps</code></td><td>List application scopes</td></tr>
-            <tr><td><code>POST</code></td><td><code>/api/v1/flags</code></td><td>Create a flag</td></tr>
-            <tr><td><code>GET</code></td><td><code>/api/v1/flags?appKey=&amp;environment=</code></td><td>List flags</td></tr>
-            <tr><td><code>PATCH</code></td><td><code>/api/v1/flags/{flagKey}</code></td><td>Update flag metadata</td></tr>
-            <tr><td><code>POST</code></td><td><code>/api/v1/flags/{flagKey}/rules</code></td><td>Add a targeting rule</td></tr>
-            <tr><td><code>POST</code></td><td><code>/api/v1/flags/{flagKey}/archive</code></td><td>Archive a flag</td></tr>
-          </tbody>
-        </table>
-        <h3>12.2 Publishing and Evaluation APIs</h3>
-        <table>
-          <thead><tr><th>Method</th><th>Endpoint</th><th>Purpose</th></tr></thead>
-          <tbody>
-            <tr><td><code>POST</code></td><td><code>/api/v1/publish</code></td><td>Publish latest flags into a new snapshot</td></tr>
-            <tr><td><code>GET</code></td><td><code>/api/v1/snapshots/latest?appKey=&amp;environment=</code></td><td>Get latest snapshot metadata</td></tr>
-            <tr><td><code>POST</code></td><td><code>/api/v1/evaluations/flags/{flagKey}</code></td><td>Evaluate one flag</td></tr>
-            <tr><td><code>POST</code></td><td><code>/api/v1/evaluations:batch</code></td><td>Evaluate multiple flags</td></tr>
-            <tr><td><code>POST</code></td><td><code>/api/v1/evaluations:explain</code></td><td>Evaluate and return decision details</td></tr>
-          </tbody>
-        </table>
+      <p><strong>ff_application</strong></p>
+      <table>
+        <tr><th>Column</th><th>Type</th><th>Notes</th></tr>
+        <tr><td><code>id</code></td><td>bigint</td><td>Primary key</td></tr>
+        <tr><td><code>app_key</code></td><td>varchar(64)</td><td>Stable application key, unique</td></tr>
+        <tr><td><code>name</code></td><td>varchar(128)</td><td>Display name</td></tr>
+        <tr><td><code>owner</code></td><td>varchar(128)</td><td>Team or owner</td></tr>
+        <tr><td><code>created_at / updated_at</code></td><td>timestamp</td><td></td></tr>
+      </table>
 
-        <h2 id="vue">13. Vue Frontend Design</h2>
-        <p>A Vue frontend is worth including, but it should stay small. Recommended pages are an application selector, flag list, flag edit form, rule editor, publish action, evaluation playground, and explain result panel.</p>
-        <p>The most valuable screen is the evaluation playground. It lets a reviewer choose an app, environment, and flag, edit JSON context, run evaluation, and see the final value and explanation.</p>
+      <p><strong>ff_flag</strong></p>
+      <table>
+        <tr><th>Column</th><th>Type</th><th>Notes</th></tr>
+        <tr><td><code>id</code></td><td>bigint</td><td>Primary key</td></tr>
+        <tr><td><code>flag_key</code></td><td>varchar(128)</td><td>Unique within <code>app_key</code></td></tr>
+        <tr><td><code>app_key</code></td><td>varchar(64)</td><td>Application scope</td></tr>
+        <tr><td><code>environment</code></td><td>varchar(32)</td><td>dev, staging, prod</td></tr>
+        <tr><td><code>type</code></td><td>varchar(16)</td><td>boolean, string, number, json</td></tr>
+        <tr><td><code>default_value</code></td><td>text</td><td>Default value</td></tr>
+        <tr><td><code>enabled</code></td><td>boolean</td><td>Global enabled state</td></tr>
+        <tr><td><code>status</code></td><td>varchar(16)</td><td>draft, active, archived</td></tr>
+        <tr><td><code>release_key</code></td><td>varchar(128)</td><td>Optional release association</td></tr>
+      </table>
 
-        <h2 id="java-sdk">14. Java SDK Example</h2>
-        <p>The Java SDK example should show how a backend service would integrate with the feature management service. For the demo, it can call the remote evaluation API directly.</p>
-        <pre><code>FeatureClient client = FeatureClient.builder()
+      <p><strong>ff_rule</strong></p>
+      <table>
+        <tr><th>Column</th><th>Type</th><th>Notes</th></tr>
+        <tr><td><code>id</code></td><td>bigint</td><td>Primary key</td></tr>
+        <tr><td><code>flag_id</code></td><td>bigint</td><td>FK to <code>ff_flag</code></td></tr>
+        <tr><td><code>priority</code></td><td>int</td><td>Lower = evaluated first</td></tr>
+        <tr><td><code>condition_json</code></td><td>text</td><td>Rule conditions (attribute, operator, value)</td></tr>
+        <tr><td><code>rollout_bps</code></td><td>int</td><td>0–10000; 5000 = 50%; 0.01% granularity</td></tr>
+        <tr><td><code>variation_value</code></td><td>text</td><td>Value returned when matched and rollout passes</td></tr>
+        <tr><td><code>enabled</code></td><td>boolean</td><td>Whether this rule is active</td></tr>
+      </table>
+
+      <p><strong>ff_config_snapshot</strong></p>
+      <table>
+        <tr><th>Column</th><th>Type</th><th>Notes</th></tr>
+        <tr><td><code>id</code></td><td>bigint</td><td>Primary key</td></tr>
+        <tr><td><code>app_key</code></td><td>varchar(64)</td><td>Application scope</td></tr>
+        <tr><td><code>environment</code></td><td>varchar(32)</td><td>Environment</td></tr>
+        <tr><td><code>version</code></td><td>bigint</td><td>Monotonic per <code>app_key + environment</code></td></tr>
+        <tr><td><code>checksum</code></td><td>varchar(128)</td><td>SHA-256 of snapshot payload</td></tr>
+        <tr><td><code>snapshot_json</code></td><td>text</td><td>Full compiled runtime snapshot</td></tr>
+        <tr><td><code>published_by</code></td><td>varchar(128)</td><td>User or system actor</td></tr>
+        <tr><td><code>published_at</code></td><td>timestamp</td><td>Publish time</td></tr>
+      </table>
+
+      <p><strong>ff_audit_log</strong></p>
+      <table>
+        <tr><th>Column</th><th>Type</th><th>Notes</th></tr>
+        <tr><td><code>actor</code></td><td>varchar(128)</td><td>User or system actor</td></tr>
+        <tr><td><code>action</code></td><td>varchar(32)</td><td>create, update, publish, rollback, archive</td></tr>
+        <tr><td><code>resource_type</code></td><td>varchar(32)</td><td>flag, rule, segment, snapshot</td></tr>
+        <tr><td><code>resource_key</code></td><td>varchar(256)</td><td>Business key</td></tr>
+        <tr><td><code>before_json / after_json</code></td><td>text</td><td>Previous / new state</td></tr>
+        <tr><td><code>created_at</code></td><td>timestamp</td><td>Event time</td></tr>
+      </table>
+
+      <h2 id="cache">9. Snapshot and Cache Design</h2>
+
+      <h3 id="snapshot-structure">9.1 Snapshot Structure</h3>
+      <pre><code>{
+  "appKey": "checkout-service",
+  "environment": "prod",
+  "version": 42,
+  "checksum": "sha256:abc123ef...",
+  "publishedAt": "2026-05-21T08:00:00Z",
+  "flags": [
+    {
+      "flagKey": "new-checkout",
+      "type": "boolean",
+      "enabled": true,
+      "defaultValue": false,
+      "releaseKey": "release-2026-05-checkout",
+      "rules": [
+        {
+          "ruleId": "rule-1", "priority": 1,
+          "conditions": [
+            { "attribute": "region", "operator": "equals", "value": "cn-east" }
+          ],
+          "rolloutBps": 5000,
+          "variationValue": true
+        }
+      ]
+    }
+  ]
+}</code></pre>
+      <div class="note"><strong>rolloutBps</strong> stores rollout as basis points (0–10000) for 0.01% granularity. <strong>checksum</strong> is SHA-256 of the canonical JSON. Snapshot is write-once; never mutated after publish.</div>
+
+      <h3 id="cache-levels">9.2 Five-Level Cache (Demo vs Production)</h3>
+      <table>
+        <tr><th>Level</th><th>Description</th><th>Demo</th><th>Production</th></tr>
+        <tr><td><span class="badge">L1</span></td><td>SDK in-process memory</td><td>N/A (SDK calls API directly)</td><td>SDK holds compiled snapshot</td></tr>
+        <tr><td><span class="badge">L2</span></td><td>CDN edge</td><td>Not implemented</td><td>CloudFront / CDN serves immutable snapshots</td></tr>
+        <tr><td><span class="badge">L3</span></td><td>JVM / server in-process</td><td><code>ConcurrentHashMap</code> in backend</td><td>Per-node in-memory cache, event-invalidated</td></tr>
+        <tr><td><span class="badge">L4</span></td><td>Redis cluster</td><td>Not implemented</td><td>Shared snapshot cache per scope</td></tr>
+        <tr><td><span class="badge">L5</span></td><td>Persistent storage</td><td>H2 <code>ff_config_snapshot</code> table</td><td>S3-compatible object storage</td></tr>
+      </table>
+      <p>Demo cache key: <code>environment + ":" + appKey</code>. On publish: update L3. On evaluation miss: load from H2 (L5) and populate L3.</p>
+
+      <h2 id="eval">10. Evaluation Engine</h2>
+
+      <h3>10.1 Evaluation Algorithm</h3>
+      <pre><code>evaluate(snapshot, flagKey, context, callerDefault):
+
+1. Find flag in snapshot by flagKey
+   → not found: { value: callerDefault, reasonCode: FLAG_NOT_FOUND }
+
+2. flag.enabled == false:
+   → { value: flag.defaultValue, reasonCode: FLAG_DISABLED }
+
+3. For each rule ordered by priority (ascending):
+   a. Evaluate rule.conditions against context.attributes
+      → no match: continue
+   b. bucket = SHA-256(flagKey + ":" + context.subjectKey) % 10000
+   c. bucket &lt; rule.rolloutBps:
+      → { value: rule.variationValue, reasonCode: RULE_MATCH,
+          matchedRuleId: rule.ruleId }
+   d. bucket >= rule.rolloutBps:
+      → record ROLLOUT_NOT_INCLUDED, continue
+
+4. No rule matched / all excluded:
+   → { value: flag.defaultValue, reasonCode: DEFAULT_VALUE }</code></pre>
+
+      <h3 id="reason-codes">10.2 Reason Codes</h3>
+      <table>
+        <tr><th>Code</th><th>Meaning</th></tr>
+        <tr><td><code>FLAG_NOT_FOUND</code></td><td>Flag key does not exist in the active snapshot</td></tr>
+        <tr><td><code>FLAG_DISABLED</code></td><td>Flag exists but <code>enabled = false</code>; returns flag default</td></tr>
+        <tr><td><code>RULE_MATCH</code></td><td>A rule matched and the subject passed rollout; returns variation</td></tr>
+        <tr><td><code>ROLLOUT_NOT_INCLUDED</code></td><td>Rule conditions matched but subject's bucket excluded it</td></tr>
+        <tr><td><code>DEFAULT_VALUE</code></td><td>No rule matched; flag default value returned</td></tr>
+        <tr><td><code>PREREQUISITE_FAILED</code></td><td>A required prerequisite flag was not satisfied</td></tr>
+        <tr><td><code>STALE_SNAPSHOT_FALLBACK</code></td><td>No fresh snapshot available; using last known good</td></tr>
+      </table>
+
+      <h3 id="rollout">10.3 Rollout Hashing — SHA-256</h3>
+      <pre><code>// Java — cross-language compatible
+String seed = flagKey + ":" + subjectKey;
+byte[] hash = MessageDigest.getInstance("SHA-256")
+                           .digest(seed.getBytes(UTF_8));
+long bucket = (Longs.fromByteArray(Arrays.copyOf(hash, 8))
+               &amp; Long.MAX_VALUE) % 10000;
+boolean included = bucket &lt; rolloutBps;</code></pre>
+      <ul>
+        <li>SHA-256: no language-specific overflow or endianness issues</li>
+        <li>Modulus 10,000: 0.01% minimum granularity</li>
+        <li>Same result in Java, Go, Python, Swift, Kotlin, TypeScript</li>
+        <li>CI enforces consistency via golden test vectors</li>
+      </ul>
+
+      <h3>10.4 Condition Operators</h3>
+      <table>
+        <tr><th>Operator</th><th>Description</th></tr>
+        <tr><td><code>equals</code></td><td>Exact string match</td></tr>
+        <tr><td><code>not_equals</code></td><td>Negated string match</td></tr>
+        <tr><td><code>contains</code></td><td>Substring match</td></tr>
+        <tr><td><code>in</code> / <code>not_in</code></td><td>Value in / not in a set</td></tr>
+        <tr><td><code>semver_gte</code> / <code>semver_lt</code></td><td>Semantic version comparison</td></tr>
+        <tr><td><code>regex</code></td><td>Regular expression match</td></tr>
+      </table>
+
+      <h2 id="explain">11. Explainability Design</h2>
+      <p>Explainability is part of the evaluation contract, not a separate afterthought.</p>
+      <p><code>POST /api/v1/evaluations:explain</code></p>
+      <pre><code>{
+  "flagKey": "new-checkout", "finalValue": true,
+  "reasonCode": "RULE_MATCH",
+  "appKey": "checkout-service", "environment": "prod",
+  "subjectKeyHash": "sha256:d4e5f6...",
+  "matchedRuleId": "rule-1",
+  "matchedConditions": ["region equals cn-east"],
+  "evaluatedRuleCount": 2,
+  "rolloutBucket": 3721, "rolloutBps": 5000,
+  "releaseKey": "release-2026-05-checkout",
+  "snapshotVersion": 42,
+  "evaluatedAt": "2026-05-21T08:00:01Z"
+}</code></pre>
+      <div class="note"><strong>subjectKey</strong> is never logged raw. Always SHA-256 hashed before storage.</div>
+      <p><strong>Production trace strategy:</strong> sample at 1% by default; debug-on-demand per <code>flagKey</code>, <code>subjectKey</code>, or <code>traceId</code> without redeployment.</p>
+
+      <h2 id="api">12. API Design</h2>
+      <h3>12.1 Management APIs</h3>
+      <table>
+        <tr><th>Method</th><th>Endpoint</th><th>Purpose</th></tr>
+        <tr><td><code>POST</code></td><td><code>/api/v1/apps</code></td><td>Register an application scope</td></tr>
+        <tr><td><code>POST</code></td><td><code>/api/v1/flags</code></td><td>Create a flag</td></tr>
+        <tr><td><code>GET</code></td><td><code>/api/v1/flags?appKey=&amp;environment=</code></td><td>List flags</td></tr>
+        <tr><td><code>PATCH</code></td><td><code>/api/v1/flags/{flagKey}</code></td><td>Update flag metadata</td></tr>
+        <tr><td><code>POST</code></td><td><code>/api/v1/flags/{flagKey}/rules</code></td><td>Add a targeting rule</td></tr>
+        <tr><td><code>PATCH</code></td><td><code>/api/v1/rules/{ruleId}</code></td><td>Update a rule</td></tr>
+        <tr><td><code>POST</code></td><td><code>/api/v1/flags/{flagKey}/archive</code></td><td>Archive a flag</td></tr>
+      </table>
+
+      <h3>12.2 Publishing APIs</h3>
+      <table>
+        <tr><th>Method</th><th>Endpoint</th><th>Purpose</th></tr>
+        <tr><td><code>POST</code></td><td><code>/api/v1/publish</code></td><td>Compile and publish new snapshot</td></tr>
+        <tr><td><code>POST</code></td><td><code>/api/v1/flags/{flagKey}/rollback</code></td><td>Roll back to previous version</td></tr>
+        <tr><td><code>GET</code></td><td><code>/api/v1/snapshots/latest?appKey=&amp;environment=</code></td><td>Latest snapshot metadata</td></tr>
+        <tr><td><code>GET</code></td><td><code>/api/v1/snapshots/{version}</code></td><td>Get specific snapshot</td></tr>
+      </table>
+
+      <h3>12.3 Evaluation APIs</h3>
+      <table>
+        <tr><th>Method</th><th>Endpoint</th><th>Purpose</th></tr>
+        <tr><td><code>POST</code></td><td><code>/api/v1/evaluations/flags/{flagKey}</code></td><td>Evaluate one flag</td></tr>
+        <tr><td><code>POST</code></td><td><code>/api/v1/evaluations:batch</code></td><td>Evaluate multiple flags</td></tr>
+        <tr><td><code>POST</code></td><td><code>/api/v1/evaluations:explain</code></td><td>Evaluate with full decision trace</td></tr>
+      </table>
+      <pre><code>// Request
+{ "appKey": "checkout-service", "environment": "prod",
+  "flagKey": "new-checkout",
+  "context": { "subjectKey": "user-123",
+    "attributes": { "region": "cn-east", "platform": "ios",
+                    "appVersion": "9.2.1", "membershipLevel": "gold" } } }
+
+// Response
+{ "flagKey": "new-checkout", "enabled": true, "value": true,
+  "reasonCode": "RULE_MATCH", "matchedRuleId": "rule-1",
+  "snapshotVersion": 42, "releaseKey": "release-2026-05-checkout" }</code></pre>
+
+      <h3>12.4 Supporting APIs</h3>
+      <table>
+        <tr><th>Method</th><th>Endpoint</th><th>Purpose</th></tr>
+        <tr><td><code>GET</code></td><td><code>/actuator/health</code></td><td>Health check</td></tr>
+        <tr><td><code>GET</code></td><td><code>/api/v1/audit-logs</code></td><td>List audit records</td></tr>
+        <tr><td><code>GET</code></td><td><code>/api/v1/flags/{flagKey}/history</code></td><td>Change history</td></tr>
+        <tr><td><code>GET</code></td><td><code>/api/v1/demo/context-template</code></td><td>Sample evaluation context</td></tr>
+      </table>
+
+      <h2 id="frontend">13. Vue Frontend Design</h2>
+      <p>Small but effective. Recommended pages:</p>
+      <ul>
+        <li>Application selector</li>
+        <li>Flag list (with status chips: draft / active / archived)</li>
+        <li>Flag create / edit form</li>
+        <li>Rule editor (priority-ordered, condition builder)</li>
+        <li>Publish snapshot button (shows current version, confirmation before publish)</li>
+        <li>Rollback option (select a previous version)</li>
+        <li>Evaluation playground + Explain result panel</li>
+      </ul>
+      <div class="callout">The evaluation playground is the most valuable screen. Let a reviewer choose an app, choose a flag, edit JSON context, click Evaluate, and see: final value, reason code, matched rule ID, rollout bucket vs. threshold, snapshot version.</div>
+
+      <h2 id="java-sdk">14. Java SDK Example</h2>
+      <pre><code>FeatureClient client = FeatureClient.builder()
     .baseUrl("http://localhost:8080")
     .appKey("checkout-service")
     .environment("local")
@@ -433,97 +563,182 @@ boolean enabled = client.boolVariation(
     "new-checkout",
     FeatureContext.builder()
         .subjectKey("user-123")
-        .attribute("region", "us-east")
+        .attribute("region", "cn-east")
         .attribute("platform", "ios")
         .build(),
-    false
-);</code></pre>
-        <p>Production SDK behavior would add local snapshot cache, background refresh, streaming updates, offline fallback, and exposure batching.</p>
+    false  // caller-provided default
+);
 
-        <h2 id="frontend-sdk">15. Frontend SDK Example</h2>
-        <p>The frontend SDK example can be a TypeScript utility used by the Vue app or a separate small example. For the demo, remote evaluation is acceptable.</p>
-        <pre><code>const client = createFeatureClient({
+EvaluationDetails details = client.getEvaluationDetails(
+    "new-checkout",
+    FeatureContext.builder().subjectKey("user-123").build(),
+    false
+);
+// details.getReasonCode()       → ReasonCode.RULE_MATCH
+// details.getMatchedRuleId()    → "rule-1"
+// details.getRolloutBucket()    → 3721
+// details.getSnapshotVersion()  → 42</code></pre>
+      <p>Production SDK additions (documented, not implemented in demo):</p>
+      <ul>
+        <li>Local snapshot cache (L1) loaded on startup from streaming gateway</li>
+        <li>Background SSE or gRPC connection for push updates</li>
+        <li>Polling fallback if streaming disconnects</li>
+        <li>Offline fallback from last persisted snapshot</li>
+        <li>Exposure event batching with async flush</li>
+        <li>Golden test vector harness for cross-language consistency</li>
+      </ul>
+
+      <h2 id="ts-sdk">15. TypeScript Frontend SDK Example</h2>
+      <pre><code>const client = createFeatureClient({
   baseUrl: "http://localhost:8080",
   appKey: "checkout-web",
-  environment: "local"
+  environment: "local",
 });
 
 const enabled = await client.boolVariation("new-checkout", {
   subjectKey: "user-123",
-  attributes: {
-    region: "us-east",
-    platform: "web"
-  }
-}, false);</code></pre>
-        <p>Production frontend SDK behavior would require public client keys, limited scoped snapshots, server-side evaluation for sensitive flags, context minimization, and exposure event batching.</p>
+  attributes: { region: "cn-east", platform: "web" },
+}, false);
 
-        <h2 id="testing">16. Testing Strategy</h2>
-        <p>Java unit tests should be included. They are one of the best ways to prove the core system is correct.</p>
-        <table>
-          <thead><tr><th>Test Type</th><th>Scope</th></tr></thead>
-          <tbody>
-            <tr><td>Unit tests</td><td>Evaluation engine, rollout hashing, rule matching</td></tr>
-            <tr><td>Repository tests</td><td>Optional, if using JPA</td></tr>
-            <tr><td>Controller tests</td><td>Basic API contract</td></tr>
-            <tr><td>End-to-end demo test</td><td>Optional, create flag, publish, evaluate</td></tr>
-          </tbody>
-        </table>
-        <p>Minimum recommended cases include flag not found, disabled flag, rule match, rule priority, deterministic rollout, explain fields, and snapshot version increments.</p>
+const details = await client.getEvaluationDetails("new-checkout", {
+  subjectKey: "user-123",
+  attributes: { region: "cn-east", platform: "web" },
+}, false);
+// details.reasonCode === "RULE_MATCH"</code></pre>
+      <div class="note"><strong>Production web SDK note:</strong> Public browser clients must not receive sensitive rule logic or backend API keys. Use public client keys. Consider server-side evaluation for sensitive flags. Apply context attribute minimization.</div>
 
-        <h2 id="observability">17. Observability Design</h2>
-        <p>For the demo, use structured logs, include important fields like <code>appKey</code>, <code>environment</code>, <code>flagKey</code>, <code>snapshotVersion</code>, <code>reasonCode</code>, and <code>traceId</code>, and expose a Spring Boot health endpoint.</p>
-        <p>For production, add OpenTelemetry tracing, Prometheus metrics, Grafana dashboards, alerting, and sampled evaluation traces.</p>
+      <h2 id="testing">16. Testing Strategy</h2>
+      <h3>Evaluation Engine Unit Tests (most important)</h3>
+      <table>
+        <tr><th>Test Case</th><th>Expected Reason Code</th></tr>
+        <tr><td>Flag key not in snapshot</td><td><code>FLAG_NOT_FOUND</code></td></tr>
+        <tr><td>Flag exists but <code>enabled = false</code></td><td><code>FLAG_DISABLED</code></td></tr>
+        <tr><td>Rule conditions match, rollout bucket passes</td><td><code>RULE_MATCH</code></td></tr>
+        <tr><td>Rule conditions match, rollout bucket excluded</td><td><code>ROLLOUT_NOT_INCLUDED</code></td></tr>
+        <tr><td>No rule matches</td><td><code>DEFAULT_VALUE</code></td></tr>
+        <tr><td>Rule priority order is respected</td><td>—</td></tr>
+        <tr><td>Same subject + flag always returns same bucket</td><td>—</td></tr>
+        <tr><td>Rollout at exactly 0% always excluded</td><td>—</td></tr>
+        <tr><td>Rollout at exactly 100% always included</td><td>—</td></tr>
+        <tr><td>Explain includes <code>matchedRuleId</code>, <code>rolloutBucket</code>, <code>rolloutBps</code></td><td>—</td></tr>
+        <tr><td>Publish increments version monotonically</td><td>—</td></tr>
+        <tr><td>Rollback restores prior snapshot</td><td>—</td></tr>
+      </table>
 
-        <h2 id="security">18. Security and Governance</h2>
-        <p>For the demo, security can be simple: optionally use a static API key and document that production requires stronger controls.</p>
-        <p>For production, use RBAC by team, app, and environment, approval workflow for production publishes, audit logs, signed SDK credentials, PII minimization, and encryption in transit and at rest.</p>
+      <h3>Test Pyramid</h3>
+      <table>
+        <tr><th>Layer</th><th>Scope</th></tr>
+        <tr><td>Unit tests</td><td>Evaluation engine, rollout hashing, rule condition evaluation</td></tr>
+        <tr><td>Repository tests</td><td>Snapshot persistence, version increment</td></tr>
+        <tr><td>Controller tests</td><td>API contract for evaluate, explain, publish</td></tr>
+        <tr><td>End-to-end demo test</td><td>Create flag → add rule → publish → evaluate → explain</td></tr>
+      </table>
 
-        <h2 id="plan">19. Implementation Plan for the Demo</h2>
-        <table>
-          <thead><tr><th>Stage</th><th>Work</th></tr></thead>
-          <tbody>
-            <tr><td>Stage 1</td><td>Spring Boot project, H2 profile, entities, repositories, management APIs, publish service, in-memory cache, evaluation engine, unit tests</td></tr>
-            <tr><td>Stage 2</td><td>Explain endpoint, reason codes, audit logs, API examples, controller tests</td></tr>
-            <tr><td>Stage 3</td><td>Vue flag list, rule editor, publish action, evaluation playground</td></tr>
-            <tr><td>Stage 4</td><td>Java SDK example, frontend SDK example, README usage snippets</td></tr>
-          </tbody>
-        </table>
+      <h2 id="observability">17. Observability Design</h2>
+      <h3>Demo</h3>
+      <ul>
+        <li>Structured JSON logs: <code>appKey</code>, <code>environment</code>, <code>flagKey</code>, <code>snapshotVersion</code>, <code>reasonCode</code>, <code>matchedRuleId</code>, <code>traceId</code></li>
+        <li>Spring Boot Actuator health endpoint</li>
+        <li>Counters and timers named but not wired to Prometheus</li>
+      </ul>
+      <h3>Production</h3>
+      <table>
+        <tr><th>Metric</th><th>Alert Threshold</th></tr>
+        <tr><td>Evaluation P99 latency</td><td>&gt; 5 ms</td></tr>
+        <tr><td>Snapshot publish latency</td><td>&gt; 10 s</td></tr>
+        <tr><td>L4 Redis cache hit rate</td><td>&lt; 85%</td></tr>
+        <tr><td>SDK stream reconnect rate</td><td>&gt; 50/s</td></tr>
+        <tr><td>Publish failure rate</td><td>&gt; 1%</td></tr>
+      </table>
 
-        <h2 id="effort">20. Estimated Effort With AI Assistance</h2>
-        <table>
-          <thead><tr><th>Scope</th><th>Estimated Time</th></tr></thead>
-          <tbody>
-            <tr><td>Backend APIs, H2 database, evaluation engine, unit tests</td><td>8 to 12 hours</td></tr>
-            <tr><td>Vue admin UI and evaluation playground</td><td>4 to 8 hours</td></tr>
-            <tr><td>Java SDK example and frontend SDK example</td><td>3 to 5 hours</td></tr>
-            <tr><td>README, diagrams, polish, manual testing</td><td>2 to 4 hours</td></tr>
-            <tr><td>Total focused demo</td><td>2 to 3 days</td></tr>
-          </tbody>
-        </table>
-        <p>A smaller backend-only version could be completed in 1 day. A production-grade version would take multiple weeks.</p>
+      <h2 id="security">18. Security and Governance</h2>
+      <table>
+        <tr><th>Area</th><th>Demo</th><th>Production</th></tr>
+        <tr><td>Auth</td><td>Static API key or no auth</td><td>RBAC by team, app, environment</td></tr>
+        <tr><td>Approvals</td><td>N/A</td><td>Approval workflow; fast-path for kill switches</td></tr>
+        <tr><td>Audit</td><td>ff_audit_log table</td><td>Immutable append-only log</td></tr>
+        <tr><td>SDK credentials</td><td>N/A</td><td>Rotating signed API keys per app scope</td></tr>
+        <tr><td>Transport</td><td>HTTP (local)</td><td>TLS 1.3 everywhere</td></tr>
+        <tr><td>PII</td><td>subjectKey not logged</td><td>SHA-256 hashed before logging; attributes redacted</td></tr>
+      </table>
 
-        <h2 id="recommendation">21. Final Recommendation</h2>
-        <p>For this interview project, the best balance is to build a Spring Boot backend, use H2 locally and document Oracle for production, implement the evaluation engine seriously, add in-memory snapshot caching, include Java unit tests, build a compact Vue frontend, and add both Java and frontend SDK examples.</p>
-        <p>This scope is large enough to demonstrate architectural thinking and engineering ability, but small enough to complete at home without turning the assignment into an unrealistic platform rebuild.</p>
-      </main>
-    </div>
+      <h2 id="plan">19. Implementation Plan</h2>
+      <h3>Stage 1 — Backend Core</h3>
+      <ul>
+        <li>Spring Boot project with H2 local profile</li>
+        <li>Schema: ff_application, ff_flag, ff_rule, ff_config_snapshot, ff_audit_log</li>
+        <li>Flag and rule management APIs</li>
+        <li>PublishService: compile snapshot, write to DB, update L3 cache</li>
+        <li>EvaluationService: all five reason codes, SHA-256 rollout hashing</li>
+        <li>Unit tests for evaluation engine</li>
+      </ul>
+      <h3>Stage 2 — Explainability and Polish</h3>
+      <ul>
+        <li>Explain endpoint with full decision trace</li>
+        <li>subjectKeyHash (SHA-256) in explain response</li>
+        <li>Audit log records for create / update / publish / rollback</li>
+        <li>Rollback API</li>
+        <li>OpenAPI documentation or README API examples</li>
+        <li>Controller tests</li>
+      </ul>
+      <h3>Stage 3 — Vue Frontend</h3>
+      <ul>
+        <li>Application and flag list screens</li>
+        <li>Flag create / edit form</li>
+        <li>Rule editor with priority control</li>
+        <li>Publish button with version confirmation</li>
+        <li>Evaluation playground with explain output panel</li>
+      </ul>
+      <h3>Stage 4 — SDK Examples</h3>
+      <ul>
+        <li>Java SDK client: <code>boolVariation</code>, <code>getEvaluationDetails</code></li>
+        <li>TypeScript frontend SDK</li>
+        <li>README usage snippets showing all reason code behaviors</li>
+      </ul>
+
+      <h2 id="effort">20. Estimated Effort With AI Assistance</h2>
+      <table>
+        <tr><th>Scope</th><th>Estimated Time</th></tr>
+        <tr><td>Backend APIs, H2, evaluation engine, unit tests</td><td>8–12 hours</td></tr>
+        <tr><td>Vue admin UI and evaluation playground</td><td>4–8 hours</td></tr>
+        <tr><td>Java SDK + TypeScript SDK examples</td><td>3–5 hours</td></tr>
+        <tr><td>README, diagrams, polish, manual testing</td><td>2–4 hours</td></tr>
+        <tr><td><strong>Total</strong></td><td><strong>2–3 days</strong></td></tr>
+      </table>
+
+      <h2 id="recommendation">21. Final Recommendation</h2>
+      <p>For this interview project, the best balance is:</p>
+      <ul>
+        <li>Spring Boot backend (Java 17)</li>
+        <li>H2 locally; Oracle configuration documented for production</li>
+        <li>Evaluation engine with all five reason codes implemented correctly</li>
+        <li>SHA-256 rollout hashing at 0.01% granularity (<code>rolloutBps</code> 0–10000)</li>
+        <li>In-memory snapshot cache (L3) as the runtime evaluation source</li>
+        <li>Immutable versioned snapshots in database (L5) with SHA-256 checksum</li>
+        <li>Explain API as part of the evaluation contract</li>
+        <li>Java unit tests for the evaluation engine</li>
+        <li>Compact Vue frontend focused on the evaluation playground</li>
+        <li>Java SDK example and TypeScript SDK example</li>
+        <li>README documenting production extensions (L1–L5 cache, K8S, streaming, Oracle, RBAC)</li>
+      </ul>
+      <div class="callout">This scope demonstrates architectural thinking, engineering ability, and production awareness — without turning the assignment into an unrealistic platform rebuild.</div>
+
+      <p class="footer">Feature Management Service Design · Updated 2026-05</p>
+    </main>
   </div>
+</div>
 
-  <script type="module">
-    import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs";
-    mermaid.initialize({
-      startOnLoad: true,
-      theme: "base",
-      themeVariables: {
-        primaryColor: "#e4f3f5",
-        primaryTextColor: "#172033",
-        primaryBorderColor: "#1f7a8c",
-        lineColor: "#145c6b",
-        secondaryColor: "#f6f7f9",
-        tertiaryColor: "#ffffff",
-        fontFamily: "Segoe UI, Helvetica Neue, Arial, sans-serif"
-      }
-    });
-  </script>
+<script type="module">
+  import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs";
+  mermaid.initialize({
+    startOnLoad: true, theme: "base",
+    themeVariables: {
+      primaryColor: "#e4f3f5", primaryTextColor: "#172033",
+      primaryBorderColor: "#1f7a8c", lineColor: "#145c6b",
+      secondaryColor: "#f0fafc", tertiaryColor: "#f6f7f9",
+      fontFamily: "Segoe UI, Helvetica Neue, Arial, sans-serif"
+    }
+  });
+</script>
 </body>
 </html>

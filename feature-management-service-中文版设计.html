@@ -1,0 +1,750 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>功能开关管理服务 — 系统设计文档</title>
+  <style>
+    :root {
+      --bg: #f6f7f9;
+      --panel: #ffffff;
+      --ink: #172033;
+      --muted: #637083;
+      --line: #d9dee7;
+      --accent: #1f7a8c;
+      --accent-strong: #145c6b;
+      --accent-soft: #e4f3f5;
+      --code-bg: #101826;
+      --code-ink: #edf5ff;
+      --table-head: #eef4f6;
+      --shadow: 0 16px 40px rgba(23,32,51,.08);
+    }
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      font-family: "PingFang SC","Microsoft YaHei","Segoe UI",Arial,sans-serif;
+      color: var(--ink); line-height: 1.75;
+      background:
+        linear-gradient(120deg, rgba(31,122,140,.12), transparent 36%),
+        linear-gradient(180deg, #fbfcfd 0%, var(--bg) 100%);
+    }
+    .page { max-width: 1240px; margin: 0 auto; padding: 36px 22px 64px; }
+    .hero {
+      border-left: 8px solid var(--accent); padding: 28px 32px;
+      background: var(--panel); box-shadow: var(--shadow); margin-bottom: 24px;
+    }
+    .hero h1 { margin: 0 0 10px; font-size: 2rem; line-height: 1.18; }
+    .hero p { max-width: 920px; margin: 0 0 14px; color: var(--muted); font-size: 1rem; }
+    .tags { display: flex; flex-wrap: wrap; gap: 8px; }
+    .tag { background: var(--accent-soft); color: var(--accent-strong);
+      border: 1px solid rgba(31,122,140,.25); border-radius: 20px;
+      padding: 3px 13px; font-size: .83rem; font-weight: 600; }
+    .layout { display: grid; grid-template-columns: 285px minmax(0,1fr); gap: 22px; align-items: start; }
+    .toc { position: sticky; top: 18px; background: var(--panel);
+      border: 1px solid var(--line); padding: 20px 18px; box-shadow: var(--shadow); }
+    .toc h2 { margin: 0 0 12px; font-size: .84rem; text-transform: uppercase;
+      letter-spacing: .08em; color: var(--accent); }
+    .toc a { display: block; color: var(--muted); text-decoration: none;
+      padding: 5px 0; border-bottom: 1px solid var(--line); font-size: .86rem; }
+    .toc a:hover { color: var(--accent); }
+    .toc .sub { padding-left: 12px; font-size: .8rem; }
+    .content { background: var(--panel); border: 1px solid var(--line);
+      padding: 28px 34px 44px; box-shadow: var(--shadow); overflow: hidden; }
+    h2 { margin-top: 32px; margin-bottom: 12px; font-size: 1.52rem;
+      color: var(--accent-strong); border-bottom: 2px solid var(--accent-soft); padding-bottom: 7px; }
+    h3 { margin-top: 20px; margin-bottom: 9px; font-size: 1.08rem; color: #145c6b; }
+    h4 { margin-top: 15px; margin-bottom: 6px; font-size: .96rem; color: var(--accent-strong); }
+    p { margin: 0 0 13px; }
+    ul, ol { margin: 0 0 16px 22px; padding: 0; }
+    li { margin: 5px 0; }
+    code { font-family: Consolas,"Courier New",monospace; font-size: .89em;
+      background: #e5f3f5; padding: 2px 6px; border-radius: 5px; color: #145c6b; }
+    pre { margin: 14px 0 18px; padding: 16px 20px; background: var(--code-bg);
+      color: var(--code-ink); overflow-x: auto; font-size: .87em; line-height: 1.65; }
+    pre code { background: transparent; padding: 0; color: inherit; }
+    .card { background: #f8fdfe; border: 1px solid rgba(31,122,140,.2);
+      padding: 16px 18px 4px; margin: 12px 0 18px; }
+    .callout { margin: 14px 0 18px; padding: 14px 18px; border-left: 4px solid var(--accent);
+      background: #eaf7f9; color: #145c6b; }
+    .note { background: #fffde7; border-left: 4px solid #f9a825;
+      padding: 12px 16px; margin: 12px 0 18px; font-size: .92rem; color: #5d4037; }
+    .mermaid-wrap { background: #fff; border: 1px solid var(--line);
+      padding: 12px; overflow-x: auto; margin: 12px 0 18px; }
+    table { width: 100%; border-collapse: collapse; margin: 12px 0 18px; font-size: .9rem; }
+    th { background: var(--table-head); color: var(--accent-strong); text-align: left;
+      padding: 9px 12px; border-bottom: 2px solid var(--line); }
+    td { padding: 8px 12px; border-bottom: 1px solid var(--line); vertical-align: top; }
+    tr:last-child td { border-bottom: none; }
+    tr:nth-child(even) td { background: rgba(31,122,140,.04); }
+    .badge { display: inline-block; padding: 2px 10px; border-radius: 10px;
+      font-size: .78rem; font-weight: 700; background: var(--accent-soft); color: var(--accent-strong); }
+    .footer { margin-top: 24px; color: var(--muted); font-size: .87rem; }
+    @media(max-width:960px){
+      .layout { grid-template-columns: 1fr; }
+      .toc { position: static; }
+      .content { padding: 22px 18px 30px; }
+    }
+  </style>
+</head>
+<body>
+<div class="page">
+  <section class="hero">
+    <h1>功能开关管理服务 — 系统设计文档</h1>
+    <p>面试项目实战设计文档。覆盖生产级架构方案、Demo 实现边界、数据库表结构、五层缓存模型、完整评估引擎（含全部原因码）及分阶段实施计划。</p>
+    <div class="tags">
+      <span class="tag">Spring Boot 3</span>
+      <span class="tag">五层缓存</span>
+      <span class="tag">SHA-256 灰度分桶</span>
+      <span class="tag">不可变快照</span>
+      <span class="tag">解释 API</span>
+      <span class="tag">Vue 前端</span>
+      <span class="tag">Java SDK</span>
+    </div>
+  </section>
+
+  <div class="layout">
+    <aside class="toc">
+      <h2>目录</h2>
+      <a href="#purpose">1. 文档目的</a>
+      <a href="#requirements">2. 需求概览</a>
+      <a href="#philosophy">3. 设计哲学</a>
+      <a href="#architecture">4. 整体架构</a>
+      <a href="#scope">5. 生产 vs Demo 边界</a>
+      <a href="#demo-scope">6. Demo 推荐范围</a>
+      <a href="#backend">7. 后端设计</a>
+      <a href="#database">8. 数据库设计</a>
+      <a class="sub" href="#tables">  8.3 核心表结构</a>
+      <a href="#cache">9. 快照与缓存设计</a>
+      <a class="sub" href="#snapshot-structure">  9.1 快照结构</a>
+      <a class="sub" href="#cache-levels">  9.2 五层缓存</a>
+      <a href="#eval">10. 评估引擎</a>
+      <a class="sub" href="#reason-codes">  10.2 原因码</a>
+      <a class="sub" href="#rollout">  10.3 灰度分桶算法</a>
+      <a href="#explain">11. 可解释性设计</a>
+      <a href="#api">12. API 设计</a>
+      <a href="#frontend">13. Vue 前端设计</a>
+      <a href="#java-sdk">14. Java SDK 示例</a>
+      <a href="#ts-sdk">15. TypeScript SDK 示例</a>
+      <a href="#testing">16. 测试策略</a>
+      <a href="#observability">17. 可观测性设计</a>
+      <a href="#security">18. 安全与治理</a>
+      <a href="#plan">19. 实施计划</a>
+      <a href="#effort">20. 工作量估算</a>
+      <a href="#recommendation">21. 最终建议</a>
+    </aside>
+
+    <main class="content">
+
+      <h2 id="purpose">1. 文档目的</h2>
+      <p>本文档描述面向电商平台的功能开关管理服务的实际设计方案。系统需要管理跨 Web 门户、后端服务和移动客户端的功能开关，支持低延迟评估（进程内 <strong>P99 &lt; 5 ms</strong>）、精细化灰度发布、清晰的归属关系和可解释的决策过程。</p>
+      <p>由于这是一道 take-home 面试项目，设计有意区分以下三个层次：</p>
+      <ul>
+        <li>生产级系统应当支持的能力</li>
+        <li>Demo 实现应该构建的内容</li>
+        <li>在 Demo 中只需文档说明、无需实现的部分</li>
+      </ul>
+      <div class="callout">Demo 的目标不是重建 LaunchDarkly，而是展示扎实的工程判断力：清晰的架构、实用的 API、确定性的评估行为、合理的缓存设计、测试覆盖，以及从 Demo 到生产的演进路径。</div>
+
+      <h2 id="requirements">2. 需求概览</h2>
+      <ul>
+        <li>100+ 应用和服务中的千级功能开关</li>
+        <li>Web、后端和移动客户端全端覆盖</li>
+        <li>高吞吐、低延迟评估 — 进程内 <strong>P99 &lt; 5 ms</strong></li>
+        <li>随目录增长保持低分发成本的五层缓存体系</li>
+        <li>跨多语言易于集成的客户端 SDK 模型</li>
+        <li>管理、分发、评估和解释 API</li>
+        <li>可观测性和调试支持</li>
+        <li>每次决策均可解释：哪个 subject、哪个区域、哪条规则、哪个灰度分桶、哪个快照版本</li>
+      </ul>
+
+      <h2 id="philosophy">3. 设计哲学</h2>
+      <p>最重要的设计决策是将系统拆分为两个平面。</p>
+      <p><strong>控制面</strong>负责编辑、校验、发布、审计和治理，可以容忍更高延迟和更强一致性要求。</p>
+      <p><strong>数据面</strong>负责开关评估，需要快速、高可用、缓存友好，并在正常运行时与控制面解耦。</p>
+      <p>贯穿 Demo 和生产的核心设计决策：</p>
+      <ul>
+        <li>不可变、版本化、SHA-256 校验的快照作为运行时单元，而非单条开关记录</li>
+        <li>按 <code>environment + appKey</code> 划分快照包</li>
+        <li>SHA-256 灰度哈希分桶，模数 10,000，精度 0.01%</li>
+        <li>每次评估响应均包含标准化原因码</li>
+        <li>可解释性是评估协议的组成部分，而非事后补日志</li>
+      </ul>
+
+      <h2 id="architecture">4. 整体架构</h2>
+      <h3>生产架构</h3>
+      <div class="mermaid-wrap">
+        <pre class="mermaid">
+flowchart TD
+    subgraph Edge["边缘层"]
+        WAF["WAF / 防火墙"]
+        CDN["CDN（L2）"]
+        LB["负载均衡"]
+        GW["API 网关"]
+    end
+    subgraph CP["控制面"]
+        AdminUI["管理后台 / CI"]
+        MgmtAPI["管理 API"]
+        Compiler["规则编译器"]
+        MetaDB["PostgreSQL"]
+        Kafka["Kafka 事件总线"]
+    end
+    subgraph DP["数据面"]
+        EvalAPI["评估 API"]
+        StreamGW["流式网关（SSE/gRPC）"]
+        SnapshotStore["S3（L5）"]
+        Redis["Redis（L4）"]
+    end
+    subgraph SDK["SDK（L1）"]
+        Java["Java"] & Go["Go"] & Js["Node.js"] & iOS["iOS"] & Web["Web"]
+    end
+    WAF --> LB --> GW
+    GW --> MgmtAPI & EvalAPI & StreamGW
+    AdminUI --> MgmtAPI
+    MgmtAPI --> MetaDB & Compiler
+    Compiler --> SnapshotStore & Kafka
+    SnapshotStore --> CDN --> SDK
+    Kafka --> StreamGW --> SDK
+    EvalAPI --> Redis --> SnapshotStore
+        </pre>
+      </div>
+
+      <h3>Demo 架构</h3>
+      <div class="mermaid-wrap">
+        <pre class="mermaid">
+flowchart LR
+    A["管理后台（Vue）"] --> B["管理 API"]
+    B --> C["H2 数据库"]
+    B --> D["PublishService"]
+    D --> E["进程内快照缓存（L3）"]
+    E --> F["评估 API"]
+    F --> G["解释响应"]
+    H["Java SDK 示例"] --> F
+    I["TypeScript SDK 示例"] --> F
+        </pre>
+      </div>
+
+      <h2 id="scope">5. 生产 vs Demo 边界</h2>
+      <table>
+        <tr><th>领域</th><th>生产设计</th><th>Demo 实现</th></tr>
+        <tr><td>后端</td><td>控制面和数据面独立部署</td><td>单个 Spring Boot 应用，包结构清晰划分边界</td></tr>
+        <tr><td>数据库</td><td>Oracle / PostgreSQL</td><td>H2 内存库（文档中保留 Oracle 配置占位）</td></tr>
+        <tr><td>缓存</td><td>L1 SDK + L2 CDN + L3 JVM + L4 Redis + L5 S3</td><td>后端进程内快照缓存（L3）</td></tr>
+        <tr><td>缓存失效</td><td>Kafka + 流式网关推送，增量同步</td><td>手动发布；下次请求时缓存重新加载</td></tr>
+        <tr><td>配置分发</td><td>SSE / WebSocket / gRPC + 增量同步</td><td>SDK 直接调用评估 API</td></tr>
+        <tr><td>SDK</td><td>Java、Go、Node.js、iOS、Android、Web</td><td>Java + TypeScript SDK 示例</td></tr>
+        <tr><td>前端</td><td>含 RBAC 和审批流程的完整管理后台</td><td>Vue UI：开关列表、规则编辑器、发布、评估沙盒</td></tr>
+        <tr><td>可观测性</td><td>OpenTelemetry、Prometheus、Grafana、ELK、告警</td><td>结构化日志、健康端点、代码预留 Metrics 接口</td></tr>
+        <tr><td>安全</td><td>RBAC、签名 SDK Key、WAF、TLS、PII 哈希</td><td>静态 API Key 或无鉴权 — 文档说明为 Demo 范围</td></tr>
+        <tr><td>可解释性</td><td>采样追踪 + 按需全量 Elasticsearch 存储</td><td>Explain API 同步返回完整决策详情</td></tr>
+        <tr><td>部署</td><td>K8S 多区域，数据面 active-active</td><td>本地 JAR 或 Docker Compose</td></tr>
+      </table>
+
+      <h2 id="demo-scope">6. Demo 推荐范围</h2>
+      <ol>
+        <li>Spring Boot 后端（Java 17）</li>
+        <li>H2 本地数据库，采用生产级 schema 设计</li>
+        <li>开关管理、发布、评估和解释的 REST API</li>
+        <li>进程内快照缓存，key 为 <code>environment:appKey</code></li>
+        <li>评估引擎，覆盖全部五个原因码</li>
+        <li>Vue 前端（开关列表、规则编辑器、发布按钮、含 Explain 输出的评估沙盒）</li>
+        <li>Java SDK 示例</li>
+        <li>TypeScript 前端 SDK 示例</li>
+        <li>评估引擎的 Java 单元测试</li>
+        <li>README 说明生产扩展方案</li>
+      </ol>
+
+      <h2 id="backend">7. 后端设计</h2>
+      <h3>包结构</h3>
+      <pre><code>com.example.featureflag
+  api
+    FlagController        // 开关管理
+    RuleController        // 规则管理
+    EvaluationController  // 评估接口
+    PublishController     // 发布接口
+    AuditController       // 审计接口
+  application
+    FlagService
+    RuleService
+    PublishService        // 编译快照，更新 L3 缓存
+    EvaluationService     // 核心评估逻辑
+    ExplainService        // 决策链路追踪
+  domain
+    Flag
+    FlagRule
+    Segment
+    ConfigSnapshot
+    EvaluationResult
+    EvaluationDetails
+    ReasonCode  // 枚举: FLAG_NOT_FOUND | FLAG_DISABLED | RULE_MATCH
+                //       | ROLLOUT_NOT_INCLUDED | DEFAULT_VALUE
+  infrastructure
+    repository
+      FlagRepository
+      RuleRepository
+      SnapshotRepository
+      AuditLogRepository
+    cache
+      SnapshotCache  // ConcurrentHashMap，key = "env:appKey"
+    persistence
+      SchemaInitializer
+  sdkexample
+    java
+    frontend</code></pre>
+
+      <h2 id="database">8. 数据库设计</h2>
+
+      <h3>8.1 生产数据库</h3>
+      <p>生产环境使用 Oracle 或 PostgreSQL，保持强一致性、可审计性和事务性发布。将所有 SQL 封装在 Repository 接口后，使底层数据库可替换而不触及领域逻辑。</p>
+
+      <h3>8.2 Demo 数据库</h3>
+      <pre><code># application-local.yml
+spring:
+  datasource.url: jdbc:h2:mem:featureflag
+  h2.console.enabled: true
+
+# application-prod.yml（占位配置）
+spring:
+  datasource.url: jdbc:oracle:thin:@//host:1521/service</code></pre>
+
+      <h3 id="tables">8.3 核心表结构</h3>
+
+      <h4>ff_application — 应用注册</h4>
+      <table>
+        <tr><th>字段</th><th>类型</th><th>说明</th></tr>
+        <tr><td><code>id</code></td><td>bigint</td><td>主键</td></tr>
+        <tr><td><code>app_key</code></td><td>varchar(64)</td><td>应用唯一标识，稳定不变</td></tr>
+        <tr><td><code>name</code></td><td>varchar(128)</td><td>显示名称</td></tr>
+        <tr><td><code>owner</code></td><td>varchar(128)</td><td>负责团队或人员</td></tr>
+        <tr><td><code>created_at / updated_at</code></td><td>timestamp</td><td></td></tr>
+      </table>
+
+      <h4>ff_flag — 开关元数据</h4>
+      <table>
+        <tr><th>字段</th><th>类型</th><th>说明</th></tr>
+        <tr><td><code>id</code></td><td>bigint</td><td>主键</td></tr>
+        <tr><td><code>flag_key</code></td><td>varchar(128)</td><td>在 app_key 范围内唯一</td></tr>
+        <tr><td><code>app_key</code></td><td>varchar(64)</td><td>应用 scope</td></tr>
+        <tr><td><code>environment</code></td><td>varchar(32)</td><td>dev / staging / prod</td></tr>
+        <tr><td><code>type</code></td><td>varchar(16)</td><td>boolean / string / number / json</td></tr>
+        <tr><td><code>default_value</code></td><td>text</td><td>开关默认值</td></tr>
+        <tr><td><code>enabled</code></td><td>boolean</td><td>全局开关状态</td></tr>
+        <tr><td><code>status</code></td><td>varchar(16)</td><td>draft / active / archived</td></tr>
+        <tr><td><code>release_key</code></td><td>varchar(128)</td><td>可选：关联发布记录</td></tr>
+      </table>
+
+      <h4>ff_rule — 目标规则</h4>
+      <table>
+        <tr><th>字段</th><th>类型</th><th>说明</th></tr>
+        <tr><td><code>id</code></td><td>bigint</td><td>主键</td></tr>
+        <tr><td><code>flag_id</code></td><td>bigint</td><td>外键 → ff_flag</td></tr>
+        <tr><td><code>priority</code></td><td>int</td><td>值越小越先评估</td></tr>
+        <tr><td><code>condition_json</code></td><td>text</td><td>规则条件（attribute、operator、value）</td></tr>
+        <tr><td><code>rollout_bps</code></td><td>int</td><td>0–10000；5000 = 50%；精度 0.01%</td></tr>
+        <tr><td><code>variation_value</code></td><td>text</td><td>命中且灰度通过时返回的值</td></tr>
+        <tr><td><code>enabled</code></td><td>boolean</td><td>该规则是否启用</td></tr>
+      </table>
+
+      <h4>ff_config_snapshot — 发布快照</h4>
+      <table>
+        <tr><th>字段</th><th>类型</th><th>说明</th></tr>
+        <tr><td><code>id</code></td><td>bigint</td><td>主键</td></tr>
+        <tr><td><code>app_key</code></td><td>varchar(64)</td><td>应用 scope</td></tr>
+        <tr><td><code>environment</code></td><td>varchar(32)</td><td>环境</td></tr>
+        <tr><td><code>version</code></td><td>bigint</td><td>按 app_key + environment 单调递增</td></tr>
+        <tr><td><code>checksum</code></td><td>varchar(128)</td><td>快照 payload 的 SHA-256</td></tr>
+        <tr><td><code>snapshot_json</code></td><td>text</td><td>完整编译后运行时快照</td></tr>
+        <tr><td><code>published_by</code></td><td>varchar(128)</td><td>发布者</td></tr>
+        <tr><td><code>published_at</code></td><td>timestamp</td><td>发布时间</td></tr>
+      </table>
+
+      <h4>ff_audit_log — 审计日志</h4>
+      <table>
+        <tr><th>字段</th><th>类型</th><th>说明</th></tr>
+        <tr><td><code>actor</code></td><td>varchar(128)</td><td>操作用户或系统</td></tr>
+        <tr><td><code>action</code></td><td>varchar(32)</td><td>create / update / publish / rollback / archive</td></tr>
+        <tr><td><code>resource_type</code></td><td>varchar(32)</td><td>flag / rule / segment / snapshot</td></tr>
+        <tr><td><code>resource_key</code></td><td>varchar(256)</td><td>业务键</td></tr>
+        <tr><td><code>before_json / after_json</code></td><td>text</td><td>变更前 / 后状态</td></tr>
+        <tr><td><code>created_at</code></td><td>timestamp</td><td>事件时间</td></tr>
+      </table>
+
+      <h2 id="cache">9. 快照与缓存设计</h2>
+
+      <h3 id="snapshot-structure">9.1 快照结构</h3>
+      <pre><code>{
+  "appKey": "checkout-service",
+  "environment": "prod",
+  "version": 42,
+  "checksum": "sha256:abc123ef...",
+  "publishedAt": "2026-05-21T08:00:00Z",
+  "flags": [
+    {
+      "flagKey": "new-checkout",
+      "type": "boolean",
+      "enabled": true,
+      "defaultValue": false,
+      "releaseKey": "release-2026-05-checkout",
+      "rules": [
+        {
+          "ruleId": "rule-1", "priority": 1,
+          "conditions": [
+            { "attribute": "region", "operator": "equals", "value": "cn-east" }
+          ],
+          "rolloutBps": 5000,
+          "variationValue": true
+        }
+      ]
+    }
+  ]
+}</code></pre>
+      <div class="note"><strong>rolloutBps</strong> 以 basis points（0–10000）存储灰度比例，精度 0.01%。<strong>checksum</strong> 是规范化 JSON 的 SHA-256。快照写一次，发布后永不修改。</div>
+
+      <h3 id="cache-levels">9.2 五层缓存（Demo vs 生产）</h3>
+      <table>
+        <tr><th>层级</th><th>位置</th><th>Demo</th><th>生产</th></tr>
+        <tr><td><span class="badge">L1</span></td><td>SDK 进程内内存</td><td>不适用（SDK 直接调用 API）</td><td>SDK 持有编译后快照</td></tr>
+        <tr><td><span class="badge">L2</span></td><td>CDN 边缘</td><td>未实现</td><td>CDN 按 version 内容寻址，永不过期</td></tr>
+        <tr><td><span class="badge">L3</span></td><td>JVM / 服务进程内</td><td><code>ConcurrentHashMap</code>，后端持有</td><td>每个评估节点进程内缓存</td></tr>
+        <tr><td><span class="badge">L4</span></td><td>Redis 集群</td><td>未实现</td><td>跨进程共享，按 scope 划分最新快照</td></tr>
+        <tr><td><span class="badge">L5</span></td><td>持久化存储</td><td>H2 <code>ff_config_snapshot</code> 表</td><td>S3 兼容对象存储</td></tr>
+      </table>
+      <p>Demo 缓存 key：<code>environment + ":" + appKey</code>。发布时更新 L3；评估 miss 时从 H2（L5）加载并预热 L3。</p>
+
+      <h2 id="eval">10. 评估引擎</h2>
+
+      <h3>10.1 评估算法</h3>
+      <pre><code>evaluate(snapshot, flagKey, context, callerDefault):
+
+1. 按 flagKey 在快照中查找开关
+   → 未找到: { value: callerDefault, reasonCode: FLAG_NOT_FOUND }
+
+2. flag.enabled == false:
+   → { value: flag.defaultValue, reasonCode: FLAG_DISABLED }
+
+3. 按 priority 升序遍历规则:
+   a. 对 context.attributes 评估 rule.conditions
+      → 不匹配: 继续下一条
+   b. bucket = SHA-256(flagKey + ":" + context.subjectKey) % 10000
+   c. bucket &lt; rule.rolloutBps:
+      → { value: rule.variationValue, reasonCode: RULE_MATCH,
+          matchedRuleId: rule.ruleId }
+   d. bucket >= rule.rolloutBps:
+      → 记录 ROLLOUT_NOT_INCLUDED，继续
+
+4. 无规则命中 / 全部排除:
+   → { value: flag.defaultValue, reasonCode: DEFAULT_VALUE }</code></pre>
+
+      <h3 id="reason-codes">10.2 原因码</h3>
+      <table>
+        <tr><th>原因码</th><th>含义</th></tr>
+        <tr><td><code>FLAG_NOT_FOUND</code></td><td>快照中不存在该 flagKey</td></tr>
+        <tr><td><code>FLAG_DISABLED</code></td><td>开关存在但 <code>enabled = false</code>，返回开关默认值</td></tr>
+        <tr><td><code>RULE_MATCH</code></td><td>规则命中且 subject 通过灰度，返回变体值</td></tr>
+        <tr><td><code>ROLLOUT_NOT_INCLUDED</code></td><td>规则条件命中但 subject 分桶被排除</td></tr>
+        <tr><td><code>DEFAULT_VALUE</code></td><td>无规则命中，返回开关默认值</td></tr>
+        <tr><td><code>PREREQUISITE_FAILED</code></td><td>前置开关条件未满足</td></tr>
+        <tr><td><code>STALE_SNAPSHOT_FALLBACK</code></td><td>无新鲜快照可用，使用最后已知快照</td></tr>
+      </table>
+
+      <h3 id="rollout">10.3 灰度分桶 — SHA-256</h3>
+      <pre><code>// Java — 跨语言兼容实现
+String seed = flagKey + ":" + subjectKey;
+byte[] hash = MessageDigest.getInstance("SHA-256")
+                           .digest(seed.getBytes(UTF_8));
+long bucket = (Longs.fromByteArray(Arrays.copyOf(hash, 8))
+               &amp; Long.MAX_VALUE) % 10000;
+boolean included = bucket &lt; rolloutBps;</code></pre>
+      <ul>
+        <li>SHA-256：无语言特定的溢出或字节序问题</li>
+        <li>模数 10,000：最小粒度 0.01%</li>
+        <li>Java、Go、Python、Swift、Kotlin、TypeScript 结果完全一致</li>
+        <li>CI 通过黄金测试向量强制保证一致性</li>
+      </ul>
+
+      <h3>10.4 条件操作符</h3>
+      <table>
+        <tr><th>操作符</th><th>说明</th></tr>
+        <tr><td><code>equals</code></td><td>精确字符串匹配</td></tr>
+        <tr><td><code>not_equals</code></td><td>否定字符串匹配</td></tr>
+        <tr><td><code>contains</code></td><td>子字符串匹配</td></tr>
+        <tr><td><code>in</code> / <code>not_in</code></td><td>值在集合内 / 不在集合内</td></tr>
+        <tr><td><code>semver_gte</code> / <code>semver_lt</code></td><td>语义版本比较</td></tr>
+        <tr><td><code>regex</code></td><td>正则表达式匹配</td></tr>
+      </table>
+
+      <h2 id="explain">11. 可解释性设计</h2>
+      <p>可解释性是评估协议的组成部分，而非事后附加。</p>
+      <p><code>POST /api/v1/evaluations:explain</code></p>
+      <pre><code>{
+  "flagKey": "new-checkout", "finalValue": true,
+  "reasonCode": "RULE_MATCH",
+  "appKey": "checkout-service", "environment": "prod",
+  "subjectKeyHash": "sha256:d4e5f6...",
+  "matchedRuleId": "rule-1",
+  "matchedConditions": ["region equals cn-east"],
+  "evaluatedRuleCount": 2,
+  "rolloutBucket": 3721, "rolloutBps": 5000,
+  "releaseKey": "release-2026-05-checkout",
+  "snapshotVersion": 42,
+  "evaluatedAt": "2026-05-21T08:00:01Z"
+}</code></pre>
+      <div class="note"><strong>subjectKey</strong> 不以原始形式记录，始终在存储前进行 SHA-256 哈希。</div>
+      <p><strong>生产追踪策略：</strong>默认 1% 采样；支持按 <code>flagKey</code>、<code>subjectKey</code> 或 <code>traceId</code> 按需开启全量追踪，无需重新部署。</p>
+
+      <h2 id="api">12. API 设计</h2>
+
+      <h3>12.1 管理 API</h3>
+      <table>
+        <tr><th>方法</th><th>路径</th><th>用途</th></tr>
+        <tr><td><code>POST</code></td><td><code>/api/v1/apps</code></td><td>注册应用 scope</td></tr>
+        <tr><td><code>POST</code></td><td><code>/api/v1/flags</code></td><td>创建开关</td></tr>
+        <tr><td><code>GET</code></td><td><code>/api/v1/flags?appKey=&amp;environment=</code></td><td>列举开关</td></tr>
+        <tr><td><code>PATCH</code></td><td><code>/api/v1/flags/{flagKey}</code></td><td>更新开关元数据</td></tr>
+        <tr><td><code>POST</code></td><td><code>/api/v1/flags/{flagKey}/rules</code></td><td>添加目标规则</td></tr>
+        <tr><td><code>PATCH</code></td><td><code>/api/v1/rules/{ruleId}</code></td><td>更新规则</td></tr>
+        <tr><td><code>POST</code></td><td><code>/api/v1/flags/{flagKey}/archive</code></td><td>归档开关</td></tr>
+      </table>
+
+      <h3>12.2 发布 API</h3>
+      <table>
+        <tr><th>方法</th><th>路径</th><th>用途</th></tr>
+        <tr><td><code>POST</code></td><td><code>/api/v1/publish</code></td><td>编译并发布新快照</td></tr>
+        <tr><td><code>POST</code></td><td><code>/api/v1/flags/{flagKey}/rollback</code></td><td>回滚到上一个版本</td></tr>
+        <tr><td><code>GET</code></td><td><code>/api/v1/snapshots/latest</code></td><td>获取最新快照元数据</td></tr>
+        <tr><td><code>GET</code></td><td><code>/api/v1/snapshots/{version}</code></td><td>获取指定版本快照</td></tr>
+      </table>
+
+      <h3>12.3 评估 API</h3>
+      <table>
+        <tr><th>方法</th><th>路径</th><th>用途</th></tr>
+        <tr><td><code>POST</code></td><td><code>/api/v1/evaluations/flags/{flagKey}</code></td><td>评估单个开关</td></tr>
+        <tr><td><code>POST</code></td><td><code>/api/v1/evaluations:batch</code></td><td>批量评估</td></tr>
+        <tr><td><code>POST</code></td><td><code>/api/v1/evaluations:explain</code></td><td>评估并返回完整决策链路</td></tr>
+      </table>
+      <pre><code>// 请求
+{ "appKey": "checkout-service", "environment": "prod",
+  "flagKey": "new-checkout",
+  "context": { "subjectKey": "user-123",
+    "attributes": { "region": "cn-east", "platform": "ios",
+                    "appVersion": "9.2.1", "membershipLevel": "gold" } } }
+
+// 响应
+{ "flagKey": "new-checkout", "enabled": true, "value": true,
+  "reasonCode": "RULE_MATCH", "matchedRuleId": "rule-1",
+  "snapshotVersion": 42, "releaseKey": "release-2026-05-checkout" }</code></pre>
+
+      <h3>12.4 辅助 API</h3>
+      <table>
+        <tr><th>方法</th><th>路径</th><th>用途</th></tr>
+        <tr><td><code>GET</code></td><td><code>/actuator/health</code></td><td>健康检查</td></tr>
+        <tr><td><code>GET</code></td><td><code>/api/v1/audit-logs</code></td><td>审计记录查询</td></tr>
+        <tr><td><code>GET</code></td><td><code>/api/v1/flags/{flagKey}/history</code></td><td>开关变更历史</td></tr>
+        <tr><td><code>GET</code></td><td><code>/api/v1/demo/context-template</code></td><td>评估 context 样例模板</td></tr>
+      </table>
+
+      <h2 id="frontend">13. Vue 前端设计</h2>
+      <p>小而精，推荐页面：</p>
+      <ul>
+        <li>应用选择器</li>
+        <li>开关列表（状态标签：草稿 / 启用 / 归档）</li>
+        <li>开关创建 / 编辑表单</li>
+        <li>规则编辑器（可拖拽调整优先级，条件构建器）</li>
+        <li>发布按钮（显示当前版本，发布前确认）</li>
+        <li>回滚选项（选择历史版本）</li>
+        <li>评估沙盒 + Explain 结果面板</li>
+      </ul>
+      <div class="callout">评估沙盒是最有价值的页面。让评审者选择应用、选择开关、编辑 JSON context、点击评估，然后看到：最终值、原因码、命中规则 ID、灰度分桶 vs 阈值、快照版本。</div>
+
+      <h2 id="java-sdk">14. Java SDK 示例</h2>
+      <pre><code>FeatureClient client = FeatureClient.builder()
+    .baseUrl("http://localhost:8080")
+    .appKey("checkout-service")
+    .environment("local")
+    .build();
+
+// 布尔评估
+boolean enabled = client.boolVariation(
+    "new-checkout",
+    FeatureContext.builder()
+        .subjectKey("user-123")
+        .attribute("region", "cn-east")
+        .attribute("platform", "ios")
+        .build(),
+    false  // 调用方默认值
+);
+
+// 获取完整决策详情
+EvaluationDetails details = client.getEvaluationDetails(
+    "new-checkout",
+    FeatureContext.builder().subjectKey("user-123").build(),
+    false
+);
+// details.getReasonCode()      → ReasonCode.RULE_MATCH
+// details.getMatchedRuleId()   → "rule-1"
+// details.getRolloutBucket()   → 3721
+// details.getSnapshotVersion() → 42</code></pre>
+      <p>生产 SDK 需额外实现（Demo 文档说明，不实现）：</p>
+      <ul>
+        <li>启动时从流式网关加载快照到 L1 缓存</li>
+        <li>后台 SSE 或 gRPC 连接接收推送更新</li>
+        <li>流式断连时自动切换轮询</li>
+        <li>从最后一次持久化快照离线兜底</li>
+        <li>曝光事件批量异步上报</li>
+        <li>黄金测试向量跨语言一致性验证</li>
+      </ul>
+
+      <h2 id="ts-sdk">15. TypeScript 前端 SDK 示例</h2>
+      <pre><code>const client = createFeatureClient({
+  baseUrl: "http://localhost:8080",
+  appKey: "checkout-web",
+  environment: "local",
+});
+
+const enabled = await client.boolVariation("new-checkout", {
+  subjectKey: "user-123",
+  attributes: { region: "cn-east", platform: "web" },
+}, false);
+
+const details = await client.getEvaluationDetails("new-checkout", {
+  subjectKey: "user-123",
+  attributes: { region: "cn-east", platform: "web" },
+}, false);
+// details.reasonCode === "RULE_MATCH"</code></pre>
+      <div class="note"><strong>生产 Web SDK 注意：</strong>浏览器端客户端不应接收完整规则逻辑或后端 API Key。使用公开客户端 Key，敏感开关考虑服务端评估，最小化 context 属性上报。</div>
+
+      <h2 id="testing">16. 测试策略</h2>
+      <h3>评估引擎单元测试（最重要）</h3>
+      <table>
+        <tr><th>测试用例</th><th>期望原因码</th></tr>
+        <tr><td>快照中不存在该 flagKey</td><td><code>FLAG_NOT_FOUND</code></td></tr>
+        <tr><td>开关存在但 <code>enabled = false</code></td><td><code>FLAG_DISABLED</code></td></tr>
+        <tr><td>规则条件命中，灰度分桶通过</td><td><code>RULE_MATCH</code></td></tr>
+        <tr><td>规则条件命中，灰度分桶被排除</td><td><code>ROLLOUT_NOT_INCLUDED</code></td></tr>
+        <tr><td>无规则命中</td><td><code>DEFAULT_VALUE</code></td></tr>
+        <tr><td>规则 priority 顺序正确</td><td>—</td></tr>
+        <tr><td>同一 subject + flag 始终返回相同分桶</td><td>—</td></tr>
+        <tr><td>灰度恰好为 0% 时始终排除</td><td>—</td></tr>
+        <tr><td>灰度恰好为 100% 时始终包含</td><td>—</td></tr>
+        <tr><td>Explain 返回正确的 matchedRuleId 和 rolloutBucket</td><td>—</td></tr>
+        <tr><td>发布后版本号单调递增</td><td>—</td></tr>
+        <tr><td>回滚后恢复上一个快照</td><td>—</td></tr>
+      </table>
+
+      <h3>测试分层</h3>
+      <table>
+        <tr><th>层次</th><th>覆盖范围</th></tr>
+        <tr><td>单元测试</td><td>评估引擎、灰度哈希、规则条件评估</td></tr>
+        <tr><td>仓储测试</td><td>快照持久化、版本递增</td></tr>
+        <tr><td>Controller 测试</td><td>evaluate、explain、publish 的 API 契约</td></tr>
+        <tr><td>端到端 Demo 测试</td><td>创建开关 → 添加规则 → 发布 → 评估 → 解释</td></tr>
+      </table>
+
+      <h2 id="observability">17. 可观测性设计</h2>
+      <h3>Demo</h3>
+      <ul>
+        <li>结构化 JSON 日志：<code>appKey</code>、<code>environment</code>、<code>flagKey</code>、<code>snapshotVersion</code>、<code>reasonCode</code>、<code>matchedRuleId</code>、<code>traceId</code></li>
+        <li>Spring Boot Actuator 健康端点</li>
+        <li>计数器和计时器命名占位，不接入 Prometheus</li>
+      </ul>
+      <h3>生产</h3>
+      <table>
+        <tr><th>指标</th><th>告警阈值</th></tr>
+        <tr><td>评估 P99 延迟</td><td>&gt; 5 ms</td></tr>
+        <tr><td>快照发布延迟</td><td>&gt; 10 秒</td></tr>
+        <tr><td>L4 Redis 缓存命中率</td><td>&lt; 85%</td></tr>
+        <tr><td>SDK 流式重连频率</td><td>&gt; 50 次/秒</td></tr>
+        <tr><td>发布失败率</td><td>&gt; 1%</td></tr>
+      </table>
+
+      <h2 id="security">18. 安全与治理</h2>
+      <table>
+        <tr><th>领域</th><th>Demo</th><th>生产</th></tr>
+        <tr><td>鉴权</td><td>静态 API Key 或无鉴权</td><td>按团队、应用、环境 RBAC</td></tr>
+        <tr><td>审批</td><td>不适用</td><td>生产发布审批流程；kill switch 快速通道</td></tr>
+        <tr><td>审计</td><td>ff_audit_log 表</td><td>不可变追加写入审计日志</td></tr>
+        <tr><td>SDK 凭证</td><td>不适用</td><td>按 appScope 轮换签名 API Key</td></tr>
+        <tr><td>传输安全</td><td>HTTP（本地）</td><td>TLS 1.3</td></tr>
+        <tr><td>PII 保护</td><td>不记录 subjectKey</td><td>SHA-256 哈希后记录；敏感属性脱敏</td></tr>
+      </table>
+
+      <h2 id="plan">19. 实施计划</h2>
+      <h3>第一阶段 — 后端核心</h3>
+      <ul>
+        <li>Spring Boot 项目 + H2 本地 Profile</li>
+        <li>建表：ff_application、ff_flag、ff_rule、ff_config_snapshot、ff_audit_log</li>
+        <li>开关和规则管理 API</li>
+        <li>PublishService：编译快照、写入数据库、更新 L3 进程内缓存</li>
+        <li>EvaluationService：五个原因码完整实现，SHA-256 灰度分桶（rolloutBps 0–10000）</li>
+        <li>评估引擎单元测试</li>
+      </ul>
+      <h3>第二阶段 — 可解释性与 API 完善</h3>
+      <ul>
+        <li>Explain 端点，返回完整决策链路</li>
+        <li>Explain 响应中的 subjectKeyHash（SHA-256）</li>
+        <li>创建 / 更新 / 发布 / 回滚操作写入审计日志</li>
+        <li>回滚 API</li>
+        <li>OpenAPI 文档或 README API 示例</li>
+        <li>Controller 测试</li>
+      </ul>
+      <h3>第三阶段 — Vue 前端</h3>
+      <ul>
+        <li>应用和开关列表页</li>
+        <li>开关创建 / 编辑表单</li>
+        <li>规则编辑器（优先级可调整）</li>
+        <li>发布按钮（版本确认）</li>
+        <li>评估沙盒 + Explain 输出面板</li>
+      </ul>
+      <h3>第四阶段 — SDK 示例</h3>
+      <ul>
+        <li>Java SDK：<code>boolVariation</code>、<code>getEvaluationDetails</code></li>
+        <li>TypeScript 前端 SDK</li>
+        <li>README 展示全部原因码的使用示例</li>
+      </ul>
+
+      <h2 id="effort">20. 工作量估算（AI 辅助）</h2>
+      <table>
+        <tr><th>范围</th><th>预估时间</th></tr>
+        <tr><td>后端 API、H2、评估引擎、单元测试</td><td>8–12 小时</td></tr>
+        <tr><td>Vue 管理后台和评估沙盒</td><td>4–8 小时</td></tr>
+        <tr><td>Java SDK 示例 + TypeScript SDK 示例</td><td>3–5 小时</td></tr>
+        <tr><td>README、架构图、打磨、手动测试</td><td>2–4 小时</td></tr>
+        <tr><td><strong>合计</strong></td><td><strong>2–3 天</strong></td></tr>
+      </table>
+
+      <h2 id="recommendation">21. 最终建议</h2>
+      <p>面试项目的最佳平衡点：</p>
+      <ul>
+        <li>Spring Boot 后端（Java 17）</li>
+        <li>本地 H2；文档中保留 Oracle 生产配置</li>
+        <li>评估引擎正确实现全部五个原因码</li>
+        <li>SHA-256 灰度分桶，精度 0.01%（<code>rolloutBps</code> 0–10000）</li>
+        <li>进程内快照缓存（L3）作为运行时评估数据源</li>
+        <li>数据库中 SHA-256 校验的不可变版本化快照（L5）</li>
+        <li>Explain API 作为评估协议的组成部分</li>
+        <li>评估引擎 Java 单元测试</li>
+        <li>聚焦评估沙盒的精简 Vue 前端</li>
+        <li>Java SDK 示例 + TypeScript SDK 示例</li>
+        <li>README 文档说明生产扩展方案（L1–L5 缓存、K8S、流式分发、Oracle、RBAC）</li>
+      </ul>
+      <div class="callout">这个范围足以展示架构设计思维、工程能力和生产意识，同时避免将作业变成一个不切实际的平台重建项目。</div>
+
+      <p class="footer">功能开关管理服务 — 系统设计文档 · 2026-05</p>
+    </main>
+  </div>
+</div>
+
+<script type="module">
+  import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs";
+  mermaid.initialize({
+    startOnLoad: true, theme: "base",
+    themeVariables: {
+      primaryColor: "#e4f3f5", primaryTextColor: "#172033",
+      primaryBorderColor: "#1f7a8c", lineColor: "#145c6b",
+      secondaryColor: "#f0fafc", tertiaryColor: "#f6f7f9",
+      fontFamily: "PingFang SC, Microsoft YaHei, Segoe UI, sans-serif"
+    }
+  });
+</script>
+</body>
+</html>
