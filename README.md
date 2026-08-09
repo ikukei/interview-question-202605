@@ -79,11 +79,10 @@ npm run dev -- --host 127.0.0.1 --port 5174
 **4. java-demo**
 
 ```cmd
-cd python-demo
-python main.py http://127.0.0.1:8080 python-demo-user Asia vi <YYYYMMDD> 5
+java -jar java-demo\target\java-demo-0.1.0-SNAPSHOT.jar http://127.0.0.1:8080 java-demo-user Asia vip <YYYYMMDD> 5
 ```
 
-> The classpath also needs the Jackson jars from your local Maven cache. `start-all-local.cmd` resolves these automatically.
+> Run the build step first so Maven creates the executable demo jar.
 
 **5. python-demo**
 
